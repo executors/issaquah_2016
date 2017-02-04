@@ -2801,3 +2801,25 @@ An executor which executes work immediately within the calling thread may define
       }
     };
 
+## Future Work
+
+### Execution contexts
+
+**dynamic_thread_pool.** The dynamic thread pool concept is one in which the
+thread pool can automatically change the thread counts to adapt to the state of
+the system, with a particular goal of providing concurrent execution guarantees
+being a notable. There are a number of possible approaches to this and the
+specification of one or more dynamic thread pools is left up to a future
+proposal.
+
+**`std::async` replacement executor.** A goal for the executors is to provide a
+mechanism to replace built in mechanisms for concurrency and parallelism in
+standard control structures. In particular, there is a strong desire to enable
+code to replace the implied default executor of `std::async` with ones with
+improved semantics not provided by the `static_thread_pool`. One simple, but
+desirable executor would be one which fully emulates the properties of
+`std::async(std::launch::async)` to allow code to introduce executors without
+breaking any assumed semantics (concurrent execution agents,
+thread-per-request, blocking on future destruction). Providing reasonable
+replacements for the default executor is seen as important to the standard and
+should appear in future papers, but such an executor is not proposed here.
