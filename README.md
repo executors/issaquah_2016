@@ -279,6 +279,41 @@ execution resources. These issues can be addressed in the future with new kinds
 of executors incorporated into the overall framework with the appropriate
 categorization.
 
+## Execution contexts
+
+In this proposal's design approach, all executors have an associated execution context. The execution context represents the place where the execution agents are mapped on to execution resources.
+
+The execution context requirements in this proposal are deliberately minimal, and are intended to:
+
+* Provide a standard protocol for obtaining an executor's associated execution context.
+* Specify basic requirements, such as identity, to allow us to reason about and manipulate execution contexts in generic code.
+* Provide a basis for further refinement by type requirements in other libraries.
+
+### Refinement by Networking TS type requirements
+
+The networking `ExecutionContext` type requirements refine this proposal's type requirements by:
+
+* Requiring that the execution context class be derived from the concrete class `execution_context`. This imbues all execution context types with specific functionality, such as the ability to query execution context objects for supported services.
+* Specifying that all un-executed function objects are destroyed when the execution context itself is destroyed.
+
+### Example of other possible refinements through type requirements
+
+Another possible refinement would be type requirements that add the ability to query properties of the execution context. For example, a parallel execution framework might define `IntrospectibleExecutionContext` type requirements. These requirements could stipulate that all execution contexts provide a `hardware_concurrency` member function, to allow generic code to query the number of hardware threads associated with execution contexts.
+
+### Refinement by concrete types
+
+The `static_thread_pool` class in this proposal is a concrete instance of an execution context. Given any `static_thread_pool::executor_type` object, we can always obtain the associated executor.
+
+*TODO* For example, consider an application with two thread pool objects, where each pool is associated with a different NUMA node. When submitting function objects to a pool, we can compare thread pool objects to determine whether we are submitting work to a local or remote node.
+
+### Minimal executors and execution contexts
+
+*TODO* minimal executor example
+
+### Execution contexts and adapters
+
+*TODO* example showing how adapter delegates to execution context of underlying executor
+
 # Proposed Wording
 
 ### Header `<execution>` synopsis
