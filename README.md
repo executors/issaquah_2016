@@ -2812,14 +2812,14 @@ being a notable. There are a number of possible approaches to this and the
 specification of one or more dynamic thread pools is left up to a future
 proposal.
 
-**`std::async` replacement executor.** A goal for the executors is to provide a
+**`std::async` replacement context.** A goal for the executors is to provide a
 mechanism to replace built in mechanisms for concurrency and parallelism in
 standard control structures. In particular, there is a strong desire to enable
-code to replace the implied default executor of `std::async` with ones with
-improved semantics not provided by the `static_thread_pool`. One simple, but
-desirable executor would be one which fully emulates the properties of
+code to replace the implied default execution context of `std::async` with ones
+with improved semantics not provided by the `static_thread_pool`. One such
+execution context would be one which fully emulates the properties of
 `std::async(std::launch::async)` to allow code to introduce executors without
 breaking any assumed semantics (concurrent execution agents,
-thread-per-request, blocking on future destruction). Providing reasonable
-replacements for the default executor is seen as important to the standard and
-should appear in future papers, but such an executor is not proposed here.
+thread-per-request, blocking on future destruction). Providing replacements for
+the default execution context is seen as important to the standard and should
+appear in future papers, but such an executor is not proposed here.
