@@ -59,31 +59,59 @@ intend this proposal to be an extensible basis for future development of
 execution in C++ which necessarily entails functionality beyond the scope of
 this basic proposal.
 
-In our programming model, executors introduce a uniform interface for creating
-execution that may not be common to the underlying execution resources actually
-responsible for the mechanics of implementing that execution. There are three
-major concepts involved in this interplay: execution resources, execution
-contexts, and executors. 
+## Concepts and Terms
 
-An **execution resource** is an instance of a hardware and/or software facility
-capable of executing a callable function object.  Different resources may offer
-a broad array of functionality and semantics, and may range from SIMD vector
-units accessible in a single thread to an entire runtime managing a large
-collection of threads.  In practice, different resources may also exhibit
-different performance characteristics of interest to the performance-conscious
-programmer. For example, an implementation might expose different processor
-cores, with potentially non-uniform access to memory, as separate resources to
-enable programmers to reason about locality.
+  An *executor* executes callable function objects.
+
+Our **executor** proposal addresses many (but not necessarily all)
+of the semantic and performance consideratons assocated with
+executing callable function objects.
+
+Contemporary hardware and runtime facilities capable of executing
+callable function objects are heterogeneous; e.g., CPU cores,
+*lightweight* CPU cores, GPU cores, OS runtime, embedded runtime,
+or database runtime.
+While this proposal does not address this heterogeneity, it must
+eventually be addressed for a uniform *executor* programming model
+to utilize heterogeneous facilities.
+
+An **execution architecture** defines facilities available and contraints 
+imposed on callable function objects that execute on hardware/runtime
+of that architecture.
+For example, callable function objects executing on a CPU via `std::thread`
+will typically have complete access to operating system, filesystem,
+networking, and similar facilities.  In contrast callable function objects
+executing on a GPU may not have access to filesystems and access to a limited
+set of runtime facilities.
  
+A program may have access to more than one **execution resource**
+of a given execution architecture.  For example, contemporary CPUs have
+multiple cores of same architecture and an instance of an execution
+resource denotes a particular core (or hyperthread).
+Programmers concerned with concurrent or parallel execution performance
+often need to explicitly manage utilization of execution resources.
+For example, a thread pool may be constrained to execute callable function
+objects on a specified set of cores.
+Furthermore, execution resources can have performance affinity with
+respect to memory and programmers concerned with performance need to
+reason about the locality between memory and the execution of function objects
+accessing that memory (e.g., NUMA regions).
+
 An **execution context** is a program object that represents a specific
-collection of execution resources.
+collection of execution resources and the execution agents that exist
+within those resources.
  
-An **executor** is an object associated with a specific execution context.  It
-provides a mechanism for creating execution agents from a callable function
-object. The agents created are bound to the executor's context, and hence to
-one or more of the resources that context represents.
+An **executor** is an object associated with a specific execution context.
+It provides a mechanism(s) for creating *execution agents* that
+execute callable function objects. The agents created are bound to the
+executor's execution context, and hence to specific execution resources.
 
-Executors themselves are the primary concern of our design.
+The primary objective of this paper is to define the initial abstractions,
+semantics, and interface for a suite of executors.
+A secondary objective is to establish conceptual framework for future
+papers to address evolving *ecosystem* of executors, execution contexts,
+execution resources, and execution architectures.
+
 
 ## Design goals
 
