@@ -98,7 +98,8 @@ reason about the locality between memory and the execution of function objects
 accessing that memory (e.g., NUMA regions).
 
 An **execution context** is a program object that represents a specific
-collection of execution resources.
+collection of execution resources and the execution agents that exist
+within those resources.
  
 An **executor** is an object associated with a specific execution context.
 It provides a mechanism(s) for creating *execution agents* that
