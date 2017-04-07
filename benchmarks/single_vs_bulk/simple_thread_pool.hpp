@@ -43,7 +43,7 @@ public:
     template <class Function>
     void execute(Function f) const
     {
-      pool_->enqueue(std::move(f));
+      pool_->execute(std::move(f));
     }
 
   private:
@@ -73,7 +73,7 @@ private:
     {
       std::unique_ptr<func> fp(this);
       Function f(std::move(function_));
-      fp.release();
+      fp.reset();
       f();
     }
     Function function_;
