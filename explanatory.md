@@ -1778,7 +1778,6 @@ make such guarantees. Incorporating a model of *boost blocking* into our design
 could be one option.
 
 ### Blocking Guarantees
->>>>>>> 8ad6f05dc1be48db0e8f30cc8211ae615f8cef0a
 
 The blocking property is not
   applied uniformly. It is both a holistic property of the executor type and
