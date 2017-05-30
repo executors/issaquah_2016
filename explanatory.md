@@ -892,8 +892,8 @@ queue, they do so with different priority. Therefore, these executors produce
 different side effects and cannot be used interchangeably.
 
 **Execution context access.** Next, all executors are required to provide
-access to their associated execution context via a member function named
-`.context`. The single type requirement for execution context types is
+access to their associated execution context via a member function or free function named
+`context`. The single type requirement for execution context types is
 `EqualityComparable`. However, we envision that these requirements will be
 refined in specializations as future proposals introduce additional
 requirements for their specific use cases. The `NetworkingExecutionContext`
@@ -909,7 +909,7 @@ known. However, the programmer may still manipulate execution contexts
 semi-generically through specializations which apply to concrete contexts.
     
 Recall `inline_executor`. Because it is such a simple executor, it serves as
-its own execution context. Its `.context()` function simply returns a reference
+its own execution context. Its `context` function simply returns a reference
 to itself. In general, more sophisticated executors will return some other
 object. Consider a `thread_pool_executor`:
 
@@ -939,7 +939,7 @@ object. Consider a `thread_pool_executor`:
     };
 
 In this example, an executor which creates execution agents by submitting to a
-thread pool returns a reference to that thread pool from `.context`.
+thread pool returns a reference to that thread pool from `context`.
 
 Our design allows programmers to reason about the identities of executors and
 execution contexts separately because the side effects they create
@@ -1053,9 +1053,9 @@ ordering. Like `executor_shape`, the type of an executor's index is given by
 `executor_index`, and its default value is `std::size_t`.
 
 **Execution context type.** `executor_context` simply names the type of an
-executor's execution context by decaying the result of its member function
-`.context`. This default cannot be overriden by a member type because
-`.context`'s result is authoritative.
+executor's execution context by decaying the result of its member function or
+free function `context`. This default cannot be overriden by a member type
+because `context`'s result is authoritative.
 
 **Associated `Future` type.** `executor_future` names the type of an executor's
 associated future type, which is the type of object returned by asynchronous,
