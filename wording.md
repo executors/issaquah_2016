@@ -82,6 +82,7 @@ namespace execution {
 
   // Member detection type traits:
 
+  template<class T> struct has_context_member;
   template<class T> struct has_execute_member;
   template<class T> struct has_post_member;
   template<class T> struct has_defer_member;
@@ -99,6 +100,7 @@ namespace execution {
   template<class T> struct has_bulk_async_defer_member;
   template<class T> struct has_bulk_then_execute_member;
 
+  template<class T> constexpr bool has_context_member_v = has_context_member<T>::value;
   template<class T> constexpr bool has_execute_member_v = has_execute_member<T>::value;
   template<class T> constexpr bool has_post_member_v = has_post_member<T>::value;
   template<class T> constexpr bool has_defer_member_v = has_defer_member<T>::value;
@@ -118,6 +120,7 @@ namespace execution {
 
   // Free function detection type traits:
 
+  template<class T> struct has_context_free_function;
   template<class T> struct has_execute_free_function;
   template<class T> struct has_post_free_function;
   template<class T> struct has_defer_free_function;
@@ -135,6 +138,7 @@ namespace execution {
   template<class T> struct has_bulk_async_defer_free_function;
   template<class T> struct has_bulk_then_execute_free_function;
 
+  template<class T> constexpr bool has_context_free_function_v = has_context_free_function<T>::value;
   template<class T> constexpr bool has_execute_free_function_v = has_execute_free_function<T>::value;
   template<class T> constexpr bool has_post_free_function_v = has_post_free_function<T>::value;
   template<class T> constexpr bool has_defer_free_function_v = has_defer_free_function<T>::value;
@@ -155,6 +159,7 @@ namespace execution {
   // Customization points:
 
   namespace {
+    constexpr unspecified context = unspecified;
     constexpr unspecified execute = unspecified;
     constexpr unspecified post = unspecified;
     constexpr unspecified defer = unspecified;
@@ -175,6 +180,7 @@ namespace execution {
 
   // Customization point type traits:
 
+  template<class T> struct can_context;
   template<class T> struct can_execute;
   template<class T> struct can_post;
   template<class T> struct can_defer;
@@ -192,6 +198,7 @@ namespace execution {
   template<class T> struct can_bulk_async_defer;
   template<class T> struct can_bulk_then_execute;
 
+  template<class T> constexpr bool can_context_v = can_context<T>::value;
   template<class T> constexpr bool can_execute_v = can_execute<T>::value;
   template<class T> constexpr bool can_post_v = can_post<T>::value;
   template<class T> constexpr bool can_defer_v = can_defer<T>::value;
@@ -462,9 +469,9 @@ The table below describes the execution member functions and non-member function
 
 A type `X` meets the `BaseExecutor` requirements if it satisfies the requirements of `CopyConstructible` (C++Std [copyconstructible]), `Destructible` (C++Std [destructible]), and `EqualityComparable` (C++Std [equalitycomparable]), as well as the additional requirements listed below.
 
-No comparison operator, copy operation, move operation, swap operation, or member function `context` on these types shall exit via an exception.
+No comparison operator, copy operation, move operation, swap operation, or member or free function `context` on these types shall exit via an exception.
 
-The executor copy constructor, comparison operators, `context` member function, associated execution functions, and other member functions defined in refinements (TODO: what should this word be?) of the `BaseExecutor` requirements shall not introduce data races as a result of concurrent calls to those functions from different threads.
+The executor copy constructor, comparison operators, `context` member or free function, associated execution functions, and other member functions defined in refinements (TODO: what should this word be?) of the `BaseExecutor` requirements shall not introduce data races as a result of concurrent calls to those functions from different threads.
 
 The destructor shall not block pending completion of the submitted function objects. [*Note:* The ability to wait for completion of submitted function objects may be provided by the associated execution context. *--end note*]
 
@@ -474,11 +481,10 @@ Table: (Base executor requirements) \label{base_executor_requirements}
 
 | Expression   | Type       | Assertion/note/pre-/post-condition |
 |--------------|------------|------------------------------------|
-| `X u(x1);` | | Shall not exit via an exception. <br/><br/>*Post:* `u == x1` and `u.context() == x1.context()`. |
-| `X u(mx1);` | | Shall not exit via an exception. <br/><br/>*Post:* `u` equals the prior value of `mx1` and `u.context()` equals the prior value of `mx1.context()`. |
+| `X u(x1);` | | Shall not exit via an exception. <br/><br/>*Post:* `u == x1` and `std::experimental::concurrency_v2::execution::context(u) == std::experimental::concurrency_v2::context(x1)`. |
+| `X u(mx1);` | | Shall not exit via an exception. <br/><br/>*Post:* `u` equals the prior value of `mx1` and `std::experimental::concurrency_v2::execution::context(u)` equals the prior value of `std::experimental::concurrency_v2::execution::context(mx1)`. |
 | `x1 == x2` | `bool` | Returns `true` only if `x1` and `x2` can be interchanged with identical effects in any of the expressions defined in these type requirements (TODO and the other executor requirements defined in this Technical Specification). [*Note:* Returning `false` does not necessarily imply that the effects are not identical. *--end note*] `operator==` shall be reflexive, symmetric, and transitive, and shall not exit via an exception. |
 | `x1 != x2` | `bool` | Same as `!(x1 == x2)`. |
-| `x1.context()` | `E&` or `const E&` where `E` is a type that satisfies the `ExecutionContext` requirements. | Shall not exit via an exception. The comparison operators and member functions defined in these requirements (TODO and the other executor requirements defined in this Technical Specification) shall not alter the reference returned by this function. |
 
 ### `OneWayExecutor` requirements
 
@@ -530,6 +536,7 @@ Table: (Executor Work Tracker requirements) \label{executor_work_tracker_require
 
 ### Member detection type traits
 
+    template<class T> struct has_context_member;
     template<class T> struct has_execute_member;
     template<class T> struct has_post_member;
     template<class T> struct has_defer_member;
@@ -551,6 +558,7 @@ This sub-clause contains templates that may be used to query the properties of a
 
 | Template                   | Condition           | Preconditions  |
 |----------------------------|---------------------|----------------|
+| `template<class T>` <br/>`struct has_context_member` | `T` has a nullary member function named `context` whose result type satisfies the `ExecutionContext` requirements. | `T` is a complete type. |
 | `template<class T>` <br/>`struct has_execute_member` | `T` has a member function named `execute` that satisfies the syntactic requirements of a one-way, potentially blocking execution function of single cardinality. | `T` is a complete type. |
 | `template<class T>` <br/>`struct has_post_member` | `T` has a member function named `post` that satisfies the syntactic requirements of a one-way, non-blocking execution function of single cardinality. | `T` is a complete type. |
 | `template<class T>` <br/>`struct has_defer_member` | `T` has a member function named `defer` that satisfies the syntactic requirements of a one-way, non-blocking execution function of single cardinality. | `T` is a complete type. |
@@ -570,6 +578,7 @@ This sub-clause contains templates that may be used to query the properties of a
 
 ### Free function detection type traits
 
+    template<class T> struct has_context_free_function;
     template<class T> struct has_execute_free_function;
     template<class T> struct has_post_free_function;
     template<class T> struct has_defer_free_function;
@@ -591,6 +600,7 @@ This sub-clause contains templates that may be used to query the properties of a
 
 | Template                   | Condition           | Preconditions  |
 |----------------------------|---------------------|----------------|
+| `template<class T>` <br/>`struct has_context_function` | There exists a free function named `context` taking an executor of type `T` whose result type satisfies the `ExecutionContext` requirements. | `T` is a complete type. |
 | `template<class T>` <br/>`struct has_execute_free_function` | There exists a free function named `execute` taking an executor of type `T` that satisfies the syntactic requirements of a one-way, potentially blocking execution function of single cardinality. | `T` is a complete type. |
 | `template<class T>` <br/>`struct has_post_free_function` | There exists a free function named `post` taking an executor of type `T` that satisfies the syntactic requirements of a one-way, non-blocking execution function of single cardinality. | `T` is a complete type. |
 | `template<class T>` <br/>`struct has_defer_free_function` | There exists a free function named `defer` taking an executor of type `T` that satisfies the syntactic requirements of a one-way, non-blocking execution function of single cardinality. | `T` is a complete type. |
@@ -610,13 +620,27 @@ This sub-clause contains templates that may be used to query the properties of a
 
 ## Executor customization points
 
-*Executor customization points* are execution functions which adapt an executor's free and member execution functions to create execution agents. Executor customization points enable uniform use of executors in generic contexts.
+*Executor customization points* are functions which adapt an executor's free and member functions. Executor customization points enable uniform use of executors in generic contexts.
 
-When an executor customization point named *NAME* invokes a free execution function of the same name, overload resolution is performed in a context that includes the declaration `void` *NAME*`(auto&... args) = delete;`, where `sizeof...(args)` is the arity of the free execution function. This context also does not include a declaration of the executor customization point.
+When an executor customization point named *NAME* invokes a free function of the same name, overload resolution is performed in a context that includes the declaration `void` *NAME*`(auto&... args) = delete;`, where `sizeof...(args)` is the arity of the free function. This context also does not include a declaration of the executor customization point.
 
-[*Note:* This provision allows executor customization points to call the executor's free, non-member execution function of the same name without recursion. *--end note*]
+[*Note:* This provision allows executor customization points to call the executor's free, non-member function of the same name without recursion. *--end note*]
 
-Whenever `std::experimental::concurrency_v2::execution::`*NAME*`(`*ARGS*`)` is a valid expression, that expression satisfies the syntactic requirements for the free execution function named *NAME* with arity `sizeof...(`*ARGS*`)` with that free execution function's semantics.
+Whenever `std::experimental::concurrency_v2::execution::`*NAME*`(`*ARGS*`)` is a valid expression, that expression satisfies the syntactic requirements for the free function named *NAME* with arity `sizeof...(`*ARGS*`)` with that free function's semantics.
+
+### `context`
+
+    namespace {
+      constexpr unspecified context = unspecified;
+    }
+ 
+The name `context` denotes a customization point. The effect of the expression `std::experimental::concurrency_v2::execution::context(E)` for some expression `E` is equivalent to:
+
+* `(E).context()` if `has_context_member_v<decay_t<decltype(E)>>` is true.
+
+* Otherwise, `context(E)` if `has_context_free_function_v<decay_t<decltype(E)>>` is true.
+
+* Otherwise, the expression is ill-formed.
 
 ### `execute`
 
@@ -881,7 +905,7 @@ The name `bulk_async_defer` denotes a customization point. The effect of the exp
       constexpr unspecified bulk_then_execute = unspecified;
     }
 
-The name `bulk_then_execute` denotes a customization point. The effect of the expression `std::expression::concurrency_v2::execution::bulk_then_execute(E, F, S, P, RF, SF)` for some expressions `E`, `F`, `S`, `P`, `RF`, and `SF` is equivalent to:
+The name `bulk_then_execute` denotes a customization point. The effect of the expression `std::experimental::concurrency_v2::execution::bulk_then_execute(E, F, S, P, RF, SF)` for some expressions `E`, `F`, `S`, `P`, `RF`, and `SF` is equivalent to:
 
 * `(E).bulk_then_execute(F, S, P, RF, SF)` if `has_bulk_then_execute_member_v<decay_t<decltype(E)>>` is true.
 
@@ -923,6 +947,7 @@ The name `bulk_then_execute` denotes a customization point. The effect of the ex
 
 ### Customization point type traits
 
+    template<class T> struct can_context;
     template<class T> struct can_execute;
     template<class T> struct can_post;
     template<class T> struct can_defer;
@@ -968,7 +993,8 @@ In the Table below,
 
 | Template                   | Conditions           | Preconditions  |
 |----------------------------|---------------------|----------------|
-| `template<class T>` <br/> `struct can_execute` | The expressions `std::experimental::concurrency_v2::execution::execute(t, f)` and `std::experimental::concurrency_v2::execution::execute(t, f, a)` are well-formed. | `T` is a complete type. |
+| `template<class T>` <br/>`struct can_context` | The expression `std::experimental::concurrency_v2::execution::context(t)` is well-formed. | `T` is a complete type. |
+| `template<class T>` <br/>`struct can_execute` | The expressions `std::experimental::concurrency_v2::execution::execute(t, f)` and `std::experimental::concurrency_v2::execution::execute(t, f, a)` are well-formed. | `T` is a complete type. |
 | `template<class T>` <br/>`struct can_post` | The expressions `std::experimental::concurrency_v2::execution::post(t, f)` and `std::experimental::concurrency_v2::execution::post(t, f, a)` are well-formed. | `T` is a complete type. |
 | `template<class T>` <br/>`struct can_defer` | The expressions `std::experimental::concurrency_v2::execution::defer(t, f)` and `std::experimental::concurrency_v2::execution::defer(t, f, a)` are well-formed. | `T` is a complete type. |
 | `template<class T>` <br/>`struct can_sync_execute` | The expressions `std::experimental::concurrency_v2::execution::sync_execute(t, f)` and `std::experimental::concurrency_v2::execution::sync_execute(t, f, a)` are well-formed. | `T` is a complete type. |
@@ -1008,7 +1034,7 @@ This sub-clause contains templates that may be used to query the properties of a
     template<class Executor>
     struct executor_context
     {
-      using type = std::decay_t<decltype(declval<const Executor&>().context())>; // TODO check this
+      using type = std::decay_t<std::experimental::concurrency_v2::execution::context(decltype(declval<const Executor&>())>; // TODO check this
     };
 
 ### Associated future type
