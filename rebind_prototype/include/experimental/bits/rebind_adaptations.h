@@ -73,6 +73,61 @@ template<class Executor>
     && !has_rebind_member<Executor, two_way_t>::value, Executor>::type
       rebind(Executor ex, two_way_t) { return std::move(ex); }
 
+
+// Default rebind for always blocking adapts possibly and never blocking executors, leaves always blocking executors as is.
+
+template<class PossiblyBlockingExecutor>
+class always_blocking_adapter
+{
+  using executor_type = decltype(execution::rebind(std::declval<PossiblyBlockingExecutor>(), two_way));
+
+  executor_type two_way_possibly_blocking_ex_;
+
+public:
+  always_blocking_adapter(PossiblyBlockingExecutor ex) : two_way_possibly_blocking_ex_(execution::rebind(std::move(ex), two_way)) {}
+
+  PossiblyBlockingExecutor rebind(possibly_blocking_t) const & { return two_way_possibly_blocking_ex_; }
+  PossiblyBlockingExecutor rebind(possibly_blocking_t) && { return std::move(two_way_possibly_blocking_ex_); }
+  always_blocking_adapter rebind(always_blocking_t) const & { return *this; }
+  always_blocking_adapter rebind(always_blocking_t) && { return std::move(*this); }
+
+  template <class... T> auto rebind(T&&... t) const &
+    -> always_blocking_adapter<typename rebind_member_result<executor_type, T...>::type>
+      { return { two_way_possibly_blocking_ex_.rebind(std::forward<T>(t)...) }; }
+  template <class... T> auto rebind(T&&... t) &&
+    -> always_blocking_adapter<typename rebind_member_result<executor_type&&, T...>::type>
+      { return { std::move(two_way_possibly_blocking_ex_).rebind(std::forward<T>(t)...) }; }
+
+  auto& context() const noexcept { return two_way_possibly_blocking_ex_.context(); }
+
+  friend bool operator==(const always_blocking_adapter& a, const always_blocking_adapter& b) noexcept
+  {
+    return a.two_way_possibly_blocking_ex_ == b.two_way_possibly_blocking_ex_;
+  }
+
+  friend bool operator!=(const always_blocking_adapter& a, const always_blocking_adapter& b) noexcept
+  {
+    return !(a == b);
+  }
+
+  template <class Function>
+  auto operator()(Function f) const -> std::future<decltype(f())>
+  {
+    auto future = two_way_possibly_blocking_ex_(std::move(f));
+    future.wait();
+    return future;
+  }
+};
+
+template<class Executor>
+  constexpr typename std::enable_if<has_rebind_member<Executor, always_blocking_t>::value, Executor>::type
+    rebind(Executor ex, always_blocking_t) { return std::move(ex); }
+
+template<class Executor>
+  constexpr typename std::enable_if<!has_rebind_member<Executor, always_blocking_t>::value, always_blocking_adapter<Executor>>::type
+    rebind(Executor ex, always_blocking_t) { return always_blocking_adapter<Executor>(std::move(ex)); }
+    
+
 // Default rebind for possibly blocking does no adaptation, as all executors are possibly blocking.
 
 template<class Executor>
