@@ -13,6 +13,7 @@ namespace execution {
 
 struct one_way_t;
 struct two_way_t;
+struct always_blocking_t;
 struct possibly_blocking_t;
 struct is_continuation_t;
 struct is_not_continuation_t;
@@ -42,6 +43,10 @@ template<class Executor>
   constexpr typename std::enable_if<is_two_way_executor<Executor>::value
     && !has_rebind_member<Executor, two_way_t>::value, Executor>::type
       rebind(Executor ex, two_way_t);
+template<class Executor> class always_blocking_adapter;
+template<class Executor>
+  constexpr typename std::enable_if<!has_rebind_member<Executor, always_blocking_t>::value, always_blocking_adapter<Executor>>::type
+    rebind(Executor ex, always_blocking_t);
 template<class Executor>
   constexpr typename std::enable_if<!has_rebind_member<Executor, possibly_blocking_t>::value, Executor>::type
     rebind(Executor ex, possibly_blocking_t);
