@@ -9,13 +9,22 @@ namespace experimental {
 inline namespace concurrency_v2 {
 namespace execution {
 
+// Type trait to determine if a property can be used only with require.
+template<class Property> struct is_require_only : false_type {};
+
 // Directionality.
 constexpr struct oneway_t {} oneway;
 constexpr struct twoway_t {} twoway;
 
+template<> struct is_require_only<oneway_t> : true_type {};
+template<> struct is_require_only<twoway_t> : true_type {};
+
 // Cardinality.
 constexpr struct single_t {} single;
 constexpr struct bulk_t {} bulk;
+
+template<> struct is_require_only<single_t> : true_type {};
+template<> struct is_require_only<bulk_t> : true_type {};
 
 // Blocking behaviour.
 constexpr struct never_blocking_t {} never_blocking;

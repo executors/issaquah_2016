@@ -9,18 +9,22 @@ namespace experimental {
 inline namespace concurrency_v2 {
 namespace execution {
 
+template<class Property> struct is_require_only;
+
 namespace prefer_impl {
 
 template<class Executor, class Property>
 constexpr auto prefer(Executor&& ex, Property&& p)
-  -> decltype(std::forward<Executor>(ex).prefer(std::forward<Property>(p)))
+  -> typename std::enable_if<!is_require_only<Property>::value,
+    decltype(std::forward<Executor>(ex).prefer(std::forward<Property>(p)))>::type
 {
   return std::forward<Executor>(ex).prefer(std::forward<Property>(p));
 }
 
 template<class Executor, class Property>
 constexpr auto prefer(Executor ex, Property&& p)
-  -> typename std::enable_if<!has_prefer_member<Executor, Property>::value,
+  -> typename std::enable_if<!is_require_only<Property>::value
+    && !has_prefer_member<Executor, Property>::value,
     decltype(std::forward<Executor>(ex).require(std::forward<Property>(p)))>::type
 {
   return std::forward<Executor>(ex).require(std::forward<Property>(p));
@@ -28,7 +32,8 @@ constexpr auto prefer(Executor ex, Property&& p)
 
 template<class Executor, class Property>
 constexpr auto prefer(Executor ex, Property&&)
-  -> typename std::enable_if<!has_prefer_member<Executor, Property>::value
+  -> typename std::enable_if<!is_require_only<Property>::value
+    && !has_prefer_member<Executor, Property>::value
     && !has_require_member<Executor, Property>::value, Executor>::type
 {
   return ex;

@@ -57,10 +57,6 @@ void executor_compile_test()
   ex1 = cex1.require(execution::possibly_blocking);
   ex1 = cex1.require(execution::always_blocking);
 
-  ex1 = cex1.prefer(execution::oneway);
-  ex1 = cex1.prefer(execution::twoway);
-  ex1 = cex1.prefer(execution::single);
-  ex1 = cex1.prefer(execution::bulk);
   ex1 = cex1.prefer(execution::thread_execution_mapping);
   ex1 = cex1.prefer(execution::never_blocking);
   ex1 = cex1.prefer(execution::possibly_blocking);

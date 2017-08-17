@@ -77,13 +77,14 @@ class static_thread_pool
 
     // Prefer uses require if available, otherwise returns *this.
     template<class Property> auto prefer(const Property& p) const
-      -> decltype(this->require(p))
+      -> typename std::enable_if<!execution::is_require_only<Property>::value, decltype(this->require(p))>::type
     {
       return this->require(p);
     }
 
     template<class Property> auto prefer(const Property&) const
-      -> typename std::enable_if<!execution::has_require_member<executor_impl, Property>::value, executor_impl>::type
+      -> typename std::enable_if<!execution::is_require_only<Property>::value
+        && !execution::has_require_member<executor_impl, Property>::value, executor_impl>::type
     {
       return *this;
     }
