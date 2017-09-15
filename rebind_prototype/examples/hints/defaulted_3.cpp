@@ -74,7 +74,7 @@ namespace custom_hints
     std::enable_if_t<!execution::has_transform_executor_member_v<Executor, tracing>, tracing_executor<Executor>>
       transform_executor(Executor ex, tracing t) { return { t.on, std::move(ex) }; }
 
-  // This hint cannot be try_transform_executorred.
+  // This hint cannot be used with try_transform_executor.
   template <class Executor>
     void try_transform_executor(Executor ex, tracing t) = delete;
 };

@@ -166,7 +166,7 @@ private:
   }
 
   // All messages associated with a single actor object should be processed
-  // non-concurrently. We transform_executor a static thread pool of size 1 to ensure
+  // non-concurrently. We require a static thread pool of size 1 to ensure
   // non-concurrent execution.
   std::experimental::static_thread_pool::executor_type executor_;
 
@@ -275,7 +275,7 @@ int main()
   for (std::size_t i = num_actors, next_i = 0; i > 0; next_i = --i)
     send(members[next_i]->address(), rcvr.address(), members[i - 1]->address());
 
-  // Send exactly one token to each actor, all with the same initial value, rounding up if transform_executord.
+  // Send exactly one token to each actor, all with the same initial value, rounding up if required.
   for (std::size_t i = 0; i < num_actors; ++i)
     send(token_value, rcvr.address(), members[i]->address());
 

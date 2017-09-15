@@ -37,7 +37,7 @@ private:
   bool tracing_;
 };
 
-static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor transform_executorments not met");
+static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor requirements not met");
 
 int main()
 {
@@ -47,13 +47,13 @@ int main()
   ex1.execute([]{ std::cout << "we made it\n"; });
 
   auto ex2 = execution::try_transform_executor(inline_executor(), custom_hints::tracing{true});
-  ex2.execute([]{ std::cout << "we made it with a try_transform_executorence\n"; });
+  ex2.execute([]{ std::cout << "we made it with a preference\n"; });
 
-  // No default means we can't transform_executor arbitrary executors using our custom hint ...
+  // No default means we can't apply transform_executor to arbitrary executors using our custom hint ...
   static_assert(!execution::can_transform_executor_v<static_thread_pool::executor_type, custom_hints::tracing>, "can't transform_executor tracing from static_thread_pool");
 
-  // ... but we can still ask for it as a try_transform_executorence.
+  // ... but we can still ask for it as a preference.
   auto ex3 = execution::try_transform_executor(pool.executor(), custom_hints::tracing{true});
-  ex3.execute([]{ std::cout << "we made it again with a try_transform_executorence\n"; });
+  ex3.execute([]{ std::cout << "we made it again with a preference\n"; });
   pool.wait();
 }
