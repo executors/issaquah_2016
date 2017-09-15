@@ -27,8 +27,8 @@ public:
   }
 };
 
-static_assert(execution::is_bulk_oneway_executor_v<inline_executor>, "bulk one way executor transform_executorments not met");
-static_assert(!execution::is_oneway_executor_v<inline_executor>, "must not meet one way executor transform_executorments");
+static_assert(execution::is_bulk_oneway_executor_v<inline_executor>, "bulk one way executor requirements not met");
+static_assert(!execution::is_oneway_executor_v<inline_executor>, "must not meet one way executor requirements");
 
 int main()
 {

@@ -72,10 +72,10 @@ public:
 
 static_assert(execution::is_oneway_executor_v<
   logging_executor<static_thread_pool::executor_type>>,
-    "one way executor transform_executorments must be met");
+    "one way executor requirements must be met");
 static_assert(execution::is_oneway_executor_v<
   logging_executor<static_thread_pool::executor_type>>,
-    "two way executor transform_executorments must be met");
+    "two way executor requirements must be met");
 
 int main()
 {

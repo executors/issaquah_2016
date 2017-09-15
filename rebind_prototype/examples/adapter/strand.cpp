@@ -133,7 +133,7 @@ public:
 
 static_assert(execution::is_oneway_executor_v<
   strand<static_thread_pool::executor_type>>,
-    "one way executor transform_executorments must be met");
+    "one way executor requirements must be met");
 
 struct foo
 {

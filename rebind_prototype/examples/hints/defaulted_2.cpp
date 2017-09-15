@@ -103,8 +103,8 @@ private:
   bool tracing_;
 };
 
-static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor transform_executorments not met");
-static_assert(execution::is_oneway_executor_v<custom_hints::tracing_executor<static_thread_pool::executor_type>>, "one way executor transform_executorments not met");
+static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor requirements not met");
+static_assert(execution::is_oneway_executor_v<custom_hints::tracing_executor<static_thread_pool::executor_type>>, "one way executor requirements not met");
 
 int main()
 {

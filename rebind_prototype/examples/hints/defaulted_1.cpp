@@ -42,7 +42,7 @@ private:
   bool tracing_;
 };
 
-static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor transform_executorments not met");
+static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor requirements not met");
 
 int main()
 {

@@ -27,10 +27,10 @@ public:
   }
 };
 
-static_assert(execution::is_bulk_oneway_executor_v<inline_executor>, "bulk one way executor transform_executorments not met");
-static_assert(execution::is_bulk_twoway_executor_v<decltype(execution::transform_executor(inline_executor(), execution::twoway))>, "bulk two way executor transform_executorments not met");
-static_assert(!execution::is_oneway_executor_v<inline_executor>, "must not meet one way executor transform_executorments");
-static_assert(!execution::is_twoway_executor_v<decltype(execution::transform_executor(inline_executor(), execution::twoway))>, "must not meet two way executor transform_executorments");
+static_assert(execution::is_bulk_oneway_executor_v<inline_executor>, "bulk one way executor requirements not met");
+static_assert(execution::is_bulk_twoway_executor_v<decltype(execution::transform_executor(inline_executor(), execution::twoway))>, "bulk two way executor requirements not met");
+static_assert(!execution::is_oneway_executor_v<inline_executor>, "must not meet one way executor requirements");
+static_assert(!execution::is_twoway_executor_v<decltype(execution::transform_executor(inline_executor(), execution::twoway))>, "must not meet two way executor requirements");
 
 int main()
 {
