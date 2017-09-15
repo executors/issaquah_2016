@@ -202,7 +202,7 @@ auto future<R>::then(Executor ex, Function f)
 
   future_impl::continuation_ptr continuation(continuation_);
   future_impl::attach(continuation,
-      [ex = execution::require(std::move(ex), execution::oneway), prom = std::move(prom),
+      [ex = execution::transform(std::move(ex), execution::oneway), prom = std::move(prom),
         pred = std::move(*this), f = std::move(f)](bool nested_inside_then) mutable
       {
         auto func = [prom = std::move(prom), pred = std::move(pred), f = std::move(f)]() mutable
@@ -220,11 +220,11 @@ auto future<R>::then(Executor ex, Function f)
         if (nested_inside_then)
         {
           ex.execute(std::move(func));                                                    // #1: Least safe, most flexible
-          // or execution::prefer(ex, execution::non_blocking).execute(std::move(func));  // #2: Safe when supported, flexible with effort
-          // or execution::require(ex, execution::non_blocking).execute(std::move(func)); // #3: Safest, least flexible
+          // or execution::try_transform(ex, execution::non_blocking).execute(std::move(func));  // #2: Safe when supported, flexible with effort
+          // or execution::transform(ex, execution::non_blocking).execute(std::move(func)); // #3: Safest, least flexible
         }
         else
-          execution::prefer(ex, execution::possibly_blocking).execute(std::move(func));
+          execution::try_transform(ex, execution::possibly_blocking).execute(std::move(func));
       });
 
   return future_impl::unwrap(std::move(fut));

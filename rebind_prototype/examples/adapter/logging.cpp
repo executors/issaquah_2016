@@ -36,12 +36,12 @@ public:
   logging_executor(const std::string& prefix, const InnerExecutor& ex)
     : prefix_(std::make_shared<std::string>(prefix)), inner_ex_(ex) {}
 
-  template <class Property> auto require(const Property& p) const &
-    -> logging_executor<execution::require_member_result_t<InnerExecutor, Property>>
-      { return { *prefix_, inner_ex_.require(p) }; }
-  template <class Property> auto require(const Property& p) &&
-    -> logging_executor<execution::require_member_result_t<InnerExecutor, Property>>
-      { return { *prefix_, std::move(inner_ex_).require(p) }; }
+  template <class Property> auto transform(const Property& p) const &
+    -> logging_executor<execution::transform_member_result_t<InnerExecutor, Property>>
+      { return { *prefix_, inner_ex_.transform(p) }; }
+  template <class Property> auto transform(const Property& p) &&
+    -> logging_executor<execution::transform_member_result_t<InnerExecutor, Property>>
+      { return { *prefix_, std::move(inner_ex_).transform(p) }; }
 
   auto& context() const noexcept { return inner_ex_.context(); }
 
@@ -82,11 +82,11 @@ int main()
   static_thread_pool pool{1};
   logging_executor<static_thread_pool::executor_type> ex1("LOG", pool.executor());
   ex1.execute([]{ std::cout << "we made it\n"; });
-  auto ex2 = ex1.require(execution::always_blocking);
+  auto ex2 = ex1.transform(execution::always_blocking);
   ex2.execute([]{ std::cout << "we made it again\n"; });
-  auto ex3 = ex2.require(execution::never_blocking).require(execution::continuation);
+  auto ex3 = ex2.transform(execution::never_blocking).transform(execution::continuation);
   ex3.execute([]{ std::cout << "and again\n"; });
-  auto ex4 = ex1.require(execution::twoway);
+  auto ex4 = ex1.transform(execution::twoway);
   future<int> f = ex4.twoway_execute([]{ std::cout << "computing result\n"; return 42; });
   pool.wait();
   std::cout << "result is " << f.get() << "\n";

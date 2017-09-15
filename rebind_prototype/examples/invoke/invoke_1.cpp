@@ -7,7 +7,7 @@ using std::experimental::static_thread_pool;
 template <class Executor, class Function>
 auto invoke(Executor ex, Function f)
 {
-  return execution::prefer(execution::require(ex, execution::twoway), execution::always_blocking).twoway_execute(std::move(f)).get();
+  return execution::try_transform(execution::transform(ex, execution::twoway), execution::always_blocking).twoway_execute(std::move(f)).get();
 }
 
 int main()
