@@ -61,30 +61,30 @@ class strand
   }
 
 public:
-  static_assert(execution::is_oneway_executor_v<Executor>, "strand requires a one way executor");
+  static_assert(execution::is_oneway_executor_v<Executor>, "strand transforms a one way executor");
 
   explicit strand(Executor ex)
     : state_(std::make_shared<strand_state>()), ex_(std::move(ex))
   {
   }
 
-  template <class Property> auto require(const Property& p) const
-    -> strand<execution::require_member_result_t<Executor, Property>, Blocking>
-      { return { state_, ex_.require(p) }; }
+  template <class Property> auto transform(const Property& p) const
+    -> strand<execution::transform_member_result_t<Executor, Property>, Blocking>
+      { return { state_, ex_.transform(p) }; }
 
-  auto require(execution::never_blocking_t) const
-    -> strand<execution::require_member_result_t<Executor, execution::never_blocking_t>, execution::never_blocking_t>
+  auto transform(execution::never_blocking_t) const
+    -> strand<execution::transform_member_result_t<Executor, execution::never_blocking_t>, execution::never_blocking_t>
   {
-    return {state_, ex_.require(execution::never_blocking)};
+    return {state_, ex_.transform(execution::never_blocking)};
   };
 
-  auto require(execution::possibly_blocking_t) const
-    -> strand<execution::require_member_result_t<Executor, execution::possibly_blocking_t>, execution::never_blocking_t>
+  auto transform(execution::possibly_blocking_t) const
+    -> strand<execution::transform_member_result_t<Executor, execution::possibly_blocking_t>, execution::never_blocking_t>
   {
-    return {state_, ex_.require(execution::possibly_blocking)};
+    return {state_, ex_.transform(execution::possibly_blocking)};
   };
 
-  void require(execution::always_blocking_t) const = delete;
+  void transform(execution::always_blocking_t) const = delete;
 
   auto& context() const
   {
@@ -124,7 +124,7 @@ public:
     lock.unlock();
 
     // Need to schedule the strand to run the queued items.
-    ex_.execute([s = this->require(execution::never_blocking).require(execution::continuation)]() mutable
+    ex_.execute([s = this->transform(execution::never_blocking).transform(execution::continuation)]() mutable
         {
           s.run_first_item();
         });
@@ -137,11 +137,11 @@ static_assert(execution::is_oneway_executor_v<
 
 struct foo
 {
-  decltype(std::declval<strand<static_thread_pool::executor_type>>().require(execution::never_blocking)) strand_;
+  decltype(std::declval<strand<static_thread_pool::executor_type>>().transform(execution::never_blocking)) strand_;
   int count_{0};
 
   explicit foo(const strand<static_thread_pool::executor_type>& s)
-    : strand_(s.require(execution::never_blocking))
+    : strand_(s.transform(execution::never_blocking))
   {
   }
 
@@ -151,7 +151,7 @@ struct foo
     {
       std::this_thread::sleep_for(std::chrono::seconds(1));
       std::cout << "count is " << count_ << "\n";
-      strand_.require(execution::possibly_blocking).execute([count = count_]{ std::cout << "nested count is " << count << "\n"; });
+      strand_.transform(execution::possibly_blocking).execute([count = count_]{ std::cout << "nested count is " << count << "\n"; });
       ++count_;
       strand_.execute(*this);
     }
@@ -162,7 +162,7 @@ int main()
 {
   static_thread_pool pool{2};
   strand<static_thread_pool::executor_type> s1(pool.executor());
-  s1.require(execution::never_blocking).execute(foo{s1});
-  s1.require(execution::possibly_blocking).execute([]{ std::cout << "After 0, before 1\n"; });
+  s1.transform(execution::never_blocking).execute(foo{s1});
+  s1.transform(execution::possibly_blocking).execute([]{ std::cout << "After 0, before 1\n"; });
   pool.wait();
 }
