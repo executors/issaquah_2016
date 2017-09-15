@@ -11,7 +11,7 @@ namespace execution {
 template<class Executor, class T>
 struct executor_future
 {
-  using type = decltype(execution::require(declval<const Executor&>(), execution::twoway).twoway_execute(declval<T(*)()>()));
+  using type = decltype(execution::transform_executor(declval<const Executor&>(), execution::twoway).twoway_execute(declval<T(*)()>()));
 };
 
 } // namespace execution

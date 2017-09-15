@@ -22,16 +22,16 @@ namespace custom_hints
     tracing_executor(bool on, const InnerExecutor& ex)
       : tracing_(on), inner_ex_(ex) {}
 
-    // Intercept require requests for tracing.
-    tracing_executor require(custom_hints::tracing t) const { return { t.on, inner_ex_ }; }
+    // Intercept transform_executor requests for tracing.
+    tracing_executor transform_executor(custom_hints::tracing t) const { return { t.on, inner_ex_ }; }
 
-    // Forward other kinds of require to the inner executor.
-    template <class Property> auto require(const Property& p) const &
-      -> tracing_executor<execution::require_member_result_t<InnerExecutor, Property>>
-        { return { tracing_, inner_ex_.require(p) }; }
-    template <class Property> auto require(const Property& p) &&
-      -> tracing_executor<execution::require_member_result_t<InnerExecutor&&, Property>>
-        { return { tracing_, std::move(inner_ex_).require(p) }; }
+    // Forward other kinds of transform_executor to the inner executor.
+    template <class Property> auto transform_executor(const Property& p) const &
+      -> tracing_executor<execution::transform_executor_member_result_t<InnerExecutor, Property>>
+        { return { tracing_, inner_ex_.transform_executor(p) }; }
+    template <class Property> auto transform_executor(const Property& p) &&
+      -> tracing_executor<execution::transform_executor_member_result_t<InnerExecutor&&, Property>>
+        { return { tracing_, std::move(inner_ex_).transform_executor(p) }; }
 
     auto& context() const noexcept { return inner_ex_.context(); }
 
@@ -71,14 +71,14 @@ namespace custom_hints
   };
 
   template <class Executor>
-    std::enable_if_t<!execution::has_require_member_v<Executor, tracing>, tracing_executor<Executor>>
-      require(Executor ex, tracing t) { return { t.on, std::move(ex) }; }
+    std::enable_if_t<!execution::has_transform_executor_member_v<Executor, tracing>, tracing_executor<Executor>>
+      transform_executor(Executor ex, tracing t) { return { t.on, std::move(ex) }; }
 };
 
 class inline_executor
 {
 public:
-  inline_executor require(custom_hints::tracing t) const { inline_executor tmp(*this); tmp.tracing_ = t.on; return tmp; }
+  inline_executor transform_executor(custom_hints::tracing t) const { inline_executor tmp(*this); tmp.tracing_ = t.on; return tmp; }
 
   auto& context() const noexcept { return *this; }
 
@@ -110,25 +110,25 @@ int main()
 {
   static_thread_pool pool{1};
 
-  auto ex1 = execution::require(inline_executor(), custom_hints::tracing{true});
+  auto ex1 = execution::transform_executor(inline_executor(), custom_hints::tracing{true});
   ex1.execute([]{ std::cout << "we made it\n"; });
 
-  auto ex2 = execution::prefer(inline_executor(), custom_hints::tracing{true});
-  ex2.execute([]{ std::cout << "we made it with a preference\n"; });
+  auto ex2 = execution::try_transform_executor(inline_executor(), custom_hints::tracing{true});
+  ex2.execute([]{ std::cout << "we made it with a try_transform_executorence\n"; });
 
-  auto ex3 = execution::require(pool.executor(), custom_hints::tracing{true});
+  auto ex3 = execution::transform_executor(pool.executor(), custom_hints::tracing{true});
   ex3.execute([]{ std::cout << "we made it again\n"; });
 
-  auto ex4 = execution::prefer(pool.executor(), custom_hints::tracing{true});
-  ex4.execute([]{ std::cout << "we made it again with a preference\n"; });
+  auto ex4 = execution::try_transform_executor(pool.executor(), custom_hints::tracing{true});
+  ex4.execute([]{ std::cout << "we made it again with a try_transform_executorence\n"; });
 
   execution::executor ex5 = pool.executor();
-  auto ex6 = execution::require(ex5, custom_hints::tracing{true});
+  auto ex6 = execution::transform_executor(ex5, custom_hints::tracing{true});
   ex6.execute([]{ std::cout << "and again\n"; });
 
   execution::executor ex7 = pool.executor();
-  auto ex8 = execution::prefer(ex7, custom_hints::tracing{true});
-  ex8.execute([]{ std::cout << "and again with a preference\n"; });
+  auto ex8 = execution::try_transform_executor(ex7, custom_hints::tracing{true});
+  ex8.execute([]{ std::cout << "and again with a try_transform_executorence\n"; });
 
   pool.wait();
 }

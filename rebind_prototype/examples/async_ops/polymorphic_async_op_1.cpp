@@ -15,7 +15,7 @@ void my_twoway_operation_1(const execution::executor& tex, int n,
   {
     // Nothing to do. Operation finishes immediately.
     // Specify non-blocking to prevent stack overflow.
-    cex.require(execution::never_blocking).execute(
+    cex.transform_executor(execution::never_blocking).execute(
         [h = std::move(h), n]() mutable
         {
           h(n);
@@ -24,12 +24,12 @@ void my_twoway_operation_1(const execution::executor& tex, int n,
   else
   {
     // Simulate an asynchronous operation.
-    tex.require(execution::never_blocking).execute(
-        [n, cex = execution::prefer(cex, execution::outstanding_work), h = std::move(h)]() mutable
+    tex.transform_executor(execution::never_blocking).execute(
+        [n, cex = execution::try_transform_executor(cex, execution::outstanding_work), h = std::move(h)]() mutable
         {
           int result = n * 2;
           std::this_thread::sleep_for(std::chrono::seconds(1)); // Simulate long running work.
-          execution::prefer(cex, execution::possibly_blocking).execute(
+          execution::try_transform_executor(cex, execution::possibly_blocking).execute(
               [h = std::move(h), result]() mutable
               {
                 h(result);
