@@ -1,6 +1,7 @@
 #ifndef STD_EXPERIMENTAL_EXECUTION
 #define STD_EXPERIMENTAL_EXECUTION
 
+#include <algorithm> // To test for collision with std::transform
 #include <experimental/bits/transform.h>
 #include <experimental/bits/try_transform.h>
 
