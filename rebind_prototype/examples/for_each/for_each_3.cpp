@@ -61,7 +61,7 @@ class basic_execution_policy
     //);
 
     using executor_type = Executor;
-    using bulk_forward_progress_transform_executorment = BulkForwardProgressRequirement;
+    using bulk_forward_progress_requirement = BulkForwardProgressRequirement;
 
     basic_execution_policy() = default;
 
