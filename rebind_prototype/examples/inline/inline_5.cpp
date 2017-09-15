@@ -6,8 +6,8 @@ namespace execution = std::experimental::execution;
 class inline_executor
 {
 public:
-  inline_executor require(execution::always_blocking_t) const { return *this; }
-  inline_executor require(execution::possibly_blocking_t) const { return *this; }
+  inline_executor transform_executor(execution::always_blocking_t) const { return *this; }
+  inline_executor transform_executor(execution::possibly_blocking_t) const { return *this; }
 
   auto& context() const noexcept { return *this; }
 
@@ -30,12 +30,12 @@ public:
   }
 };
 
-static_assert(execution::is_bulk_oneway_executor_v<inline_executor>, "bulk one way executor requirements not met");
-static_assert(!execution::is_oneway_executor_v<inline_executor>, "must not meet one way executor requirements");
+static_assert(execution::is_bulk_oneway_executor_v<inline_executor>, "bulk one way executor transform_executorments not met");
+static_assert(!execution::is_oneway_executor_v<inline_executor>, "must not meet one way executor transform_executorments");
 
 int main()
 {
   inline_executor ex1;
-  auto ex2 = ex1.require(execution::always_blocking);
+  auto ex2 = ex1.transform_executor(execution::always_blocking);
   ex2.bulk_execute([](int n, int&){ std::cout << "part " << n << "\n"; }, 8, []{ return 0; });
 }

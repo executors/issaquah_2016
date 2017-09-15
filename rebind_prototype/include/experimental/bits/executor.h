@@ -84,17 +84,17 @@ class executor
     virtual void* executor_target() = 0;
     virtual const void* executor_target() const = 0;
     virtual bool executor_equals(const impl_base* e) const noexcept = 0;
-    virtual impl_base* executor_require(never_blocking_t) const = 0;
-    virtual impl_base* executor_require(possibly_blocking_t) const = 0;
-    virtual impl_base* executor_require(always_blocking_t) const = 0;
-    virtual impl_base* executor_prefer(continuation_t) const = 0;
-    virtual impl_base* executor_prefer(not_continuation_t) const = 0;
-    virtual impl_base* executor_prefer(outstanding_work_t) const = 0;
-    virtual impl_base* executor_prefer(not_outstanding_work_t) const = 0;
-    virtual impl_base* executor_prefer(bulk_sequenced_execution_t) const = 0;
-    virtual impl_base* executor_prefer(bulk_parallel_execution_t) const = 0;
-    virtual impl_base* executor_prefer(bulk_unsequenced_execution_t) const = 0;
-    virtual impl_base* executor_prefer(new_thread_execution_mapping_t) const = 0;
+    virtual impl_base* executor_transform_executor(never_blocking_t) const = 0;
+    virtual impl_base* executor_transform_executor(possibly_blocking_t) const = 0;
+    virtual impl_base* executor_transform_executor(always_blocking_t) const = 0;
+    virtual impl_base* executor_try_transform_executor(continuation_t) const = 0;
+    virtual impl_base* executor_try_transform_executor(not_continuation_t) const = 0;
+    virtual impl_base* executor_try_transform_executor(outstanding_work_t) const = 0;
+    virtual impl_base* executor_try_transform_executor(not_outstanding_work_t) const = 0;
+    virtual impl_base* executor_try_transform_executor(bulk_sequenced_execution_t) const = 0;
+    virtual impl_base* executor_try_transform_executor(bulk_parallel_execution_t) const = 0;
+    virtual impl_base* executor_try_transform_executor(bulk_unsequenced_execution_t) const = 0;
+    virtual impl_base* executor_try_transform_executor(new_thread_execution_mapping_t) const = 0;
     virtual const type_info& context_target_type() const = 0;
     virtual const void* context_target() const = 0;
     virtual bool context_equals(const impl_base* e) const noexcept = 0;
@@ -174,59 +174,59 @@ class executor
       return executor_ == *static_cast<const Executor*>(e->executor_target());
     }
 
-    virtual impl_base* executor_require(never_blocking_t) const
+    virtual impl_base* executor_transform_executor(never_blocking_t) const
     {
-      return new impl<decltype(execution::require(executor_, never_blocking))>(execution::require(executor_, never_blocking));
+      return new impl<decltype(execution::transform_executor(executor_, never_blocking))>(execution::transform_executor(executor_, never_blocking));
     }
 
-    virtual impl_base* executor_require(possibly_blocking_t) const
+    virtual impl_base* executor_transform_executor(possibly_blocking_t) const
     {
-      return new impl<decltype(execution::require(executor_, possibly_blocking))>(execution::require(executor_, possibly_blocking));
+      return new impl<decltype(execution::transform_executor(executor_, possibly_blocking))>(execution::transform_executor(executor_, possibly_blocking));
     }
 
-    virtual impl_base* executor_require(always_blocking_t) const
+    virtual impl_base* executor_transform_executor(always_blocking_t) const
     {
-      return new impl<decltype(execution::require(executor_, always_blocking))>(execution::require(executor_, always_blocking));
+      return new impl<decltype(execution::transform_executor(executor_, always_blocking))>(execution::transform_executor(executor_, always_blocking));
     }
 
-    virtual impl_base* executor_prefer(continuation_t) const
+    virtual impl_base* executor_try_transform_executor(continuation_t) const
     {
-      return new impl<decltype(execution::prefer(executor_, continuation))>(execution::prefer(executor_, continuation));
+      return new impl<decltype(execution::try_transform_executor(executor_, continuation))>(execution::try_transform_executor(executor_, continuation));
     }
 
-    virtual impl_base* executor_prefer(not_continuation_t) const
+    virtual impl_base* executor_try_transform_executor(not_continuation_t) const
     {
-      return new impl<decltype(execution::prefer(executor_, not_continuation))>(execution::prefer(executor_, not_continuation));
+      return new impl<decltype(execution::try_transform_executor(executor_, not_continuation))>(execution::try_transform_executor(executor_, not_continuation));
     }
 
-    virtual impl_base* executor_prefer(outstanding_work_t) const
+    virtual impl_base* executor_try_transform_executor(outstanding_work_t) const
     {
-      return new impl<decltype(execution::prefer(executor_, outstanding_work))>(execution::prefer(executor_, outstanding_work));
+      return new impl<decltype(execution::try_transform_executor(executor_, outstanding_work))>(execution::try_transform_executor(executor_, outstanding_work));
     }
 
-    virtual impl_base* executor_prefer(not_outstanding_work_t) const
+    virtual impl_base* executor_try_transform_executor(not_outstanding_work_t) const
     {
-      return new impl<decltype(execution::prefer(executor_, not_outstanding_work))>(execution::prefer(executor_, not_outstanding_work));
+      return new impl<decltype(execution::try_transform_executor(executor_, not_outstanding_work))>(execution::try_transform_executor(executor_, not_outstanding_work));
     }
 
-    virtual impl_base* executor_prefer(bulk_sequenced_execution_t) const
+    virtual impl_base* executor_try_transform_executor(bulk_sequenced_execution_t) const
     {
-      return new impl<decltype(execution::prefer(executor_, bulk_sequenced_execution))>(execution::prefer(executor_, bulk_sequenced_execution));
+      return new impl<decltype(execution::try_transform_executor(executor_, bulk_sequenced_execution))>(execution::try_transform_executor(executor_, bulk_sequenced_execution));
     }
 
-    virtual impl_base* executor_prefer(bulk_parallel_execution_t) const
+    virtual impl_base* executor_try_transform_executor(bulk_parallel_execution_t) const
     {
-      return new impl<decltype(execution::prefer(executor_, bulk_parallel_execution))>(execution::prefer(executor_, bulk_parallel_execution));
+      return new impl<decltype(execution::try_transform_executor(executor_, bulk_parallel_execution))>(execution::try_transform_executor(executor_, bulk_parallel_execution));
     }
 
-    virtual impl_base* executor_prefer(bulk_unsequenced_execution_t) const
+    virtual impl_base* executor_try_transform_executor(bulk_unsequenced_execution_t) const
     {
-      return new impl<decltype(execution::prefer(executor_, bulk_unsequenced_execution))>(execution::prefer(executor_, bulk_unsequenced_execution));
+      return new impl<decltype(execution::try_transform_executor(executor_, bulk_unsequenced_execution))>(execution::try_transform_executor(executor_, bulk_unsequenced_execution));
     }
 
-    virtual impl_base* executor_prefer(new_thread_execution_mapping_t) const
+    virtual impl_base* executor_try_transform_executor(new_thread_execution_mapping_t) const
     {
-      return new impl<decltype(execution::prefer(executor_, new_thread_execution_mapping))>(execution::prefer(executor_, new_thread_execution_mapping));
+      return new impl<decltype(execution::try_transform_executor(executor_, new_thread_execution_mapping))>(execution::try_transform_executor(executor_, new_thread_execution_mapping));
     }
 
     virtual const type_info& context_target_type() const
@@ -319,7 +319,7 @@ public:
 
   template<class Executor> executor(Executor e)
   {
-    auto e2 = execution::require(std::move(e), execution::single, execution::bulk, execution::oneway, execution::twoway);
+    auto e2 = execution::transform_executor(std::move(e), execution::single, execution::bulk, execution::oneway, execution::twoway);
     context_.impl_ = new impl<decltype(e2)>(std::move(e2));
   }
 
@@ -372,24 +372,24 @@ public:
 
   // executor operations:
 
-  executor require(oneway_t) const { return *this; }
-  executor require(twoway_t) const { return *this; }
-  executor require(single_t) const { return *this; }
-  executor require(bulk_t) const { return *this; }
-  executor require(thread_execution_mapping_t) const { return *this; }
+  executor transform_executor(oneway_t) const { return *this; }
+  executor transform_executor(twoway_t) const { return *this; }
+  executor transform_executor(single_t) const { return *this; }
+  executor transform_executor(bulk_t) const { return *this; }
+  executor transform_executor(thread_execution_mapping_t) const { return *this; }
 
-  executor require(never_blocking_t) const { return context_.impl_ ? context_.impl_->executor_require(never_blocking) : context_.impl_->clone(); }
-  executor require(possibly_blocking_t) const { return context_.impl_ ? context_.impl_->executor_require(possibly_blocking) : context_.impl_->clone(); }
-  executor require(always_blocking_t) const { return context_.impl_ ? context_.impl_->executor_require(always_blocking) : context_.impl_->clone(); }
+  executor transform_executor(never_blocking_t) const { return context_.impl_ ? context_.impl_->executor_transform_executor(never_blocking) : context_.impl_->clone(); }
+  executor transform_executor(possibly_blocking_t) const { return context_.impl_ ? context_.impl_->executor_transform_executor(possibly_blocking) : context_.impl_->clone(); }
+  executor transform_executor(always_blocking_t) const { return context_.impl_ ? context_.impl_->executor_transform_executor(always_blocking) : context_.impl_->clone(); }
 
-  friend executor prefer(const executor& e, continuation_t) { return e.get_impl() ? e.get_impl()->executor_prefer(continuation) : e.get_impl()->clone(); }
-  friend executor prefer(const executor& e, not_continuation_t) { return e.get_impl() ? e.get_impl()->executor_prefer(not_continuation) : e.get_impl()->clone(); }
-  friend executor prefer(const executor& e, outstanding_work_t) { return e.get_impl() ? e.get_impl()->executor_prefer(outstanding_work) : e.get_impl()->clone(); }
-  friend executor prefer(const executor& e, not_outstanding_work_t) { return e.get_impl() ? e.get_impl()->executor_prefer(not_outstanding_work) : e.get_impl()->clone(); }
-  friend executor prefer(const executor& e, bulk_sequenced_execution_t) { return e.get_impl() ? e.get_impl()->executor_prefer(bulk_sequenced_execution) : e.get_impl()->clone(); }
-  friend executor prefer(const executor& e, bulk_parallel_execution_t) { return e.get_impl() ? e.get_impl()->executor_prefer(bulk_parallel_execution) : e.get_impl()->clone(); }
-  friend executor prefer(const executor& e, bulk_unsequenced_execution_t) { return e.get_impl() ? e.get_impl()->executor_prefer(bulk_unsequenced_execution) : e.get_impl()->clone(); }
-  friend executor prefer(const executor& e, new_thread_execution_mapping_t) { return e.get_impl() ? e.get_impl()->executor_prefer(new_thread_execution_mapping) : e.get_impl()->clone(); }
+  friend executor try_transform_executor(const executor& e, continuation_t) { return e.get_impl() ? e.get_impl()->executor_try_transform_executor(continuation) : e.get_impl()->clone(); }
+  friend executor try_transform_executor(const executor& e, not_continuation_t) { return e.get_impl() ? e.get_impl()->executor_try_transform_executor(not_continuation) : e.get_impl()->clone(); }
+  friend executor try_transform_executor(const executor& e, outstanding_work_t) { return e.get_impl() ? e.get_impl()->executor_try_transform_executor(outstanding_work) : e.get_impl()->clone(); }
+  friend executor try_transform_executor(const executor& e, not_outstanding_work_t) { return e.get_impl() ? e.get_impl()->executor_try_transform_executor(not_outstanding_work) : e.get_impl()->clone(); }
+  friend executor try_transform_executor(const executor& e, bulk_sequenced_execution_t) { return e.get_impl() ? e.get_impl()->executor_try_transform_executor(bulk_sequenced_execution) : e.get_impl()->clone(); }
+  friend executor try_transform_executor(const executor& e, bulk_parallel_execution_t) { return e.get_impl() ? e.get_impl()->executor_try_transform_executor(bulk_parallel_execution) : e.get_impl()->clone(); }
+  friend executor try_transform_executor(const executor& e, bulk_unsequenced_execution_t) { return e.get_impl() ? e.get_impl()->executor_try_transform_executor(bulk_unsequenced_execution) : e.get_impl()->clone(); }
+  friend executor try_transform_executor(const executor& e, new_thread_execution_mapping_t) { return e.get_impl() ? e.get_impl()->executor_try_transform_executor(new_thread_execution_mapping) : e.get_impl()->clone(); }
   
   const context_type& context() const noexcept
   {

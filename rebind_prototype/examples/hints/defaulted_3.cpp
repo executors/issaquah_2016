@@ -8,7 +8,7 @@ namespace custom_hints
 {
   struct tracing { bool on; };
 
-  // Default hint implementation creates an adapter, but only when require() is used.
+  // Default hint implementation creates an adapter, but only when transform_executor() is used.
 
   template <class InnerExecutor>
   class tracing_executor
@@ -22,16 +22,16 @@ namespace custom_hints
     tracing_executor(bool on, const InnerExecutor& ex)
       : tracing_(on), inner_ex_(ex) {}
 
-    // Intercept require requests for tracing.
-    tracing_executor require(custom_hints::tracing t) const { return { t.on, inner_ex_ }; }
+    // Intercept transform_executor requests for tracing.
+    tracing_executor transform_executor(custom_hints::tracing t) const { return { t.on, inner_ex_ }; }
 
-    // Forward other kinds of require to the inner executor.
-    template <class Property> auto require(const Property& p) const &
-      -> tracing_executor<execution::require_member_result_t<InnerExecutor, Property>>
-        { return { tracing_, inner_ex_.require(p) }; }
-    template <class Property> auto require(const Property& p) &&
-      -> tracing_executor<execution::require_member_result_t<InnerExecutor&&, Property>>
-        { return { tracing_, std::move(inner_ex_).require(p) }; }
+    // Forward other kinds of transform_executor to the inner executor.
+    template <class Property> auto transform_executor(const Property& p) const &
+      -> tracing_executor<execution::transform_executor_member_result_t<InnerExecutor, Property>>
+        { return { tracing_, inner_ex_.transform_executor(p) }; }
+    template <class Property> auto transform_executor(const Property& p) &&
+      -> tracing_executor<execution::transform_executor_member_result_t<InnerExecutor&&, Property>>
+        { return { tracing_, std::move(inner_ex_).transform_executor(p) }; }
 
     auto& context() const noexcept { return inner_ex_.context(); }
 
@@ -71,18 +71,18 @@ namespace custom_hints
   };
 
   template <class Executor>
-    std::enable_if_t<!execution::has_require_member_v<Executor, tracing>, tracing_executor<Executor>>
-      require(Executor ex, tracing t) { return { t.on, std::move(ex) }; }
+    std::enable_if_t<!execution::has_transform_executor_member_v<Executor, tracing>, tracing_executor<Executor>>
+      transform_executor(Executor ex, tracing t) { return { t.on, std::move(ex) }; }
 
-  // This hint cannot be preferred.
+  // This hint cannot be try_transform_executorred.
   template <class Executor>
-    void prefer(Executor ex, tracing t) = delete;
+    void try_transform_executor(Executor ex, tracing t) = delete;
 };
 
 class inline_executor
 {
 public:
-  inline_executor require(custom_hints::tracing t) const { inline_executor tmp(*this); tmp.tracing_ = t.on; return tmp; }
+  inline_executor transform_executor(custom_hints::tracing t) const { inline_executor tmp(*this); tmp.tracing_ = t.on; return tmp; }
 
   auto& context() const noexcept { return *this; }
 
@@ -107,28 +107,28 @@ private:
   bool tracing_;
 };
 
-static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor requirements not met");
-static_assert(execution::is_oneway_executor_v<custom_hints::tracing_executor<static_thread_pool::executor_type>>, "one way executor requirements not met");
+static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor transform_executorments not met");
+static_assert(execution::is_oneway_executor_v<custom_hints::tracing_executor<static_thread_pool::executor_type>>, "one way executor transform_executorments not met");
 
 int main()
 {
   static_thread_pool pool{1};
 
-  auto ex1 = execution::require(inline_executor(), custom_hints::tracing{true});
+  auto ex1 = execution::transform_executor(inline_executor(), custom_hints::tracing{true});
   ex1.execute([]{ std::cout << "we made it\n"; });
 
-  static_assert(!execution::can_prefer_v<inline_executor, custom_hints::tracing>, "cannot prefer");
+  static_assert(!execution::can_try_transform_executor_v<inline_executor, custom_hints::tracing>, "cannot try_transform_executor");
 
-  auto ex3 = execution::require(pool.executor(), custom_hints::tracing{true});
+  auto ex3 = execution::transform_executor(pool.executor(), custom_hints::tracing{true});
   ex3.execute([]{ std::cout << "we made it again\n"; });
 
-  static_assert(!execution::can_prefer_v<static_thread_pool::executor_type, custom_hints::tracing>, "cannot prefer");
+  static_assert(!execution::can_try_transform_executor_v<static_thread_pool::executor_type, custom_hints::tracing>, "cannot try_transform_executor");
 
   execution::executor ex5 = pool.executor();
-  auto ex6 = execution::require(ex5, custom_hints::tracing{true});
+  auto ex6 = execution::transform_executor(ex5, custom_hints::tracing{true});
   ex6.execute([]{ std::cout << "and again\n"; });
 
-  static_assert(!execution::can_prefer_v<execution::executor, custom_hints::tracing>, "cannot prefer");
+  static_assert(!execution::can_try_transform_executor_v<execution::executor, custom_hints::tracing>, "cannot try_transform_executor");
 
   pool.wait();
 }

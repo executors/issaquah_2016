@@ -1,8 +1,8 @@
 #ifndef STD_EXPERIMENTAL_EXECUTION
 #define STD_EXPERIMENTAL_EXECUTION
 
-#include <experimental/bits/require.h>
-#include <experimental/bits/prefer.h>
+#include <experimental/bits/transform_executor.h>
+#include <experimental/bits/try_transform_executor.h>
 
 namespace std {
 namespace experimental {
@@ -43,7 +43,7 @@ constexpr struct new_thread_execution_mapping_t {} new_thread_execution_mapping;
 template<class ProtoAllocator> struct allocator_t { ProtoAllocator alloc; };
 template<class ProtoAllocator> constexpr allocator_t<ProtoAllocator> allocator(const ProtoAllocator& a) { return {a}; }
 
-// Type traits to determine conformance to executor type requirements.
+// Type traits to determine conformance to executor type transform_executorments.
 template<class Executor> struct is_executor;
 template<class Executor> struct is_oneway_executor;
 template<class Executor> struct is_twoway_executor;
@@ -73,35 +73,35 @@ template<class Executor> struct executor_index;
 template<class Executor> using executor_shape_t = typename executor_shape<Executor>::type;
 template<class Executor> using executor_index_t = typename executor_index<Executor>::type;
 
-// Type traits to determine whether a require member invocation is valid, and what its result is.
-template<class Executor, class Property> struct has_require_member;
-template<class Executor, class Property> struct require_member_result;
+// Type traits to determine whether a transform_executor member invocation is valid, and what its result is.
+template<class Executor, class Property> struct has_transform_executor_member;
+template<class Executor, class Property> struct transform_executor_member_result;
 
 template<class Executor, class Property>
-  constexpr bool has_require_member_v = has_require_member<Executor, Property>::value;
+  constexpr bool has_transform_executor_member_v = has_transform_executor_member<Executor, Property>::value;
 template<class Executor, class Property>
-  using require_member_result_t = typename require_member_result<Executor, Property>::type;
+  using transform_executor_member_result_t = typename transform_executor_member_result<Executor, Property>::type;
 
 namespace
 {
-  // Require customization point.
-  constexpr const auto& require = require_impl::customization_point<>;
+  // transform_executor customization point.
+  constexpr const auto& transform_executor = transform_executor_impl::customization_point<>;
 
-  // Prefer customization point.
-  constexpr const auto& prefer = prefer_impl::customization_point<>;
+  // try_transform_executor customization point.
+  constexpr const auto& try_transform_executor = try_transform_executor_impl::customization_point<>;
 }
 
-// Type trait to determine whether the require customization point is valid for the specified arguments.
-template<class Executor, class... Properties> struct can_require;
+// Type trait to determine whether the transform_executor customization point is valid for the specified arguments.
+template<class Executor, class... Properties> struct can_transform_executor;
 
 template<class Executor, class... Properties>
-  constexpr bool can_require_v = can_require<Executor, Properties...>::value;
+  constexpr bool can_transform_executor_v = can_transform_executor<Executor, Properties...>::value;
 
-// Type trait to determine whether the prefer customization point is valid for the specified arguments.
-template<class Executor, class... Properties> struct can_prefer;
+// Type trait to determine whether the try_transform_executor customization point is valid for the specified arguments.
+template<class Executor, class... Properties> struct can_try_transform_executor;
 
 template<class Executor, class... Properties>
-  constexpr bool can_prefer_v = can_prefer<Executor, Properties...>::value;
+  constexpr bool can_try_transform_executor_v = can_try_transform_executor<Executor, Properties...>::value;
 
 // Polymorphic wrappers.
 class bad_executor;
@@ -121,11 +121,11 @@ class executor;
 #include <experimental/bits/executor_future.h>
 #include <experimental/bits/executor_shape.h>
 #include <experimental/bits/executor_index.h>
-#include <experimental/bits/has_require_member.h>
-#include <experimental/bits/require_member_result.h>
-#include <experimental/bits/require_adaptations.h>
-#include <experimental/bits/can_require.h>
-#include <experimental/bits/can_prefer.h>
+#include <experimental/bits/has_transform_executor_member.h>
+#include <experimental/bits/transform_executor_member_result.h>
+#include <experimental/bits/transform_executor_adaptations.h>
+#include <experimental/bits/can_transform_executor.h>
+#include <experimental/bits/can_try_transform_executor.h>
 #include <experimental/bits/executor.h>
 
 #endif // STD_EXPERIMENTAL_EXECUTION

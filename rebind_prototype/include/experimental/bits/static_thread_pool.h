@@ -37,43 +37,43 @@ class static_thread_pool
     ~executor_impl() { pool_->work_down(Work{}); }
 
     // Directionality. Both kinds supported, so requiring does not change type.
-    executor_impl require(execution::oneway_t) const { return *this; }
-    executor_impl require(execution::twoway_t) const { return *this; }
+    executor_impl transform_executor(execution::oneway_t) const { return *this; }
+    executor_impl transform_executor(execution::twoway_t) const { return *this; }
 
     // Cardinality. Both kinds supported, so requiring does not change type.
-    executor_impl require(execution::single_t) const { return *this; }
-    executor_impl require(execution::bulk_t) const { return *this; }
+    executor_impl transform_executor(execution::single_t) const { return *this; }
+    executor_impl transform_executor(execution::bulk_t) const { return *this; }
 
     // Blocking modes.
     executor_impl<execution::never_blocking_t, Continuation, Work, ProtoAllocator>
-      require(execution::never_blocking_t) const { return {pool_, allocator_}; };
+      transform_executor(execution::never_blocking_t) const { return {pool_, allocator_}; };
     executor_impl<execution::possibly_blocking_t, Continuation, Work, ProtoAllocator>
-      require(execution::possibly_blocking_t) const { return {pool_, allocator_}; };
+      transform_executor(execution::possibly_blocking_t) const { return {pool_, allocator_}; };
     executor_impl<execution::always_blocking_t, Continuation, Work, ProtoAllocator>
-      require(execution::always_blocking_t) const { return {pool_, allocator_}; };
+      transform_executor(execution::always_blocking_t) const { return {pool_, allocator_}; };
 
     // Continuation hint.
     executor_impl<Blocking, execution::continuation_t, Work, ProtoAllocator>
-      require(execution::continuation_t) const { return {pool_, allocator_}; };
+      transform_executor(execution::continuation_t) const { return {pool_, allocator_}; };
     executor_impl<Blocking, execution::not_continuation_t, Work, ProtoAllocator>
-      require(execution::not_continuation_t) const { return {pool_, allocator_}; };
+      transform_executor(execution::not_continuation_t) const { return {pool_, allocator_}; };
 
     // Work tracking.
     executor_impl<Blocking, Continuation, execution::outstanding_work_t, ProtoAllocator>
-      require(execution::outstanding_work_t) const { return {pool_, allocator_}; };
+      transform_executor(execution::outstanding_work_t) const { return {pool_, allocator_}; };
     executor_impl<Blocking, Continuation, execution::not_outstanding_work_t, ProtoAllocator>
-      require(execution::not_outstanding_work_t) const { return {pool_, allocator_}; };
+      transform_executor(execution::not_outstanding_work_t) const { return {pool_, allocator_}; };
 
     // Bulk forward progress.
-    executor_impl require(execution::bulk_parallel_execution_t) const { return *this; }
+    executor_impl transform_executor(execution::bulk_parallel_execution_t) const { return *this; }
 
     // Mapping of execution on to threads.
-    executor_impl require(execution::thread_execution_mapping_t) const { return *this; }
+    executor_impl transform_executor(execution::thread_execution_mapping_t) const { return *this; }
 
     // Allocator.
     template<class NewProtoAllocator>
     executor_impl<Blocking, Continuation, execution::not_outstanding_work_t, NewProtoAllocator>
-      require(const execution::allocator_t<NewProtoAllocator>& a) const { return {pool_, a.alloc}; };
+      transform_executor(const execution::allocator_t<NewProtoAllocator>& a) const { return {pool_, a.alloc}; };
 
     bool running_in_this_thread() const noexcept { return pool_->running_in_this_thread(); }
 

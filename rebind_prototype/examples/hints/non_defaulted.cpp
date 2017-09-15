@@ -12,7 +12,7 @@ namespace custom_hints
 class inline_executor
 {
 public:
-  inline_executor require(custom_hints::tracing t) const { inline_executor tmp(*this); tmp.tracing_ = t.on; return tmp; }
+  inline_executor transform_executor(custom_hints::tracing t) const { inline_executor tmp(*this); tmp.tracing_ = t.on; return tmp; }
 
   auto& context() const noexcept { return *this; }
 
@@ -37,23 +37,23 @@ private:
   bool tracing_;
 };
 
-static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor requirements not met");
+static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor transform_executorments not met");
 
 int main()
 {
   static_thread_pool pool{1};
 
-  auto ex1 = execution::require(inline_executor(), custom_hints::tracing{true});
+  auto ex1 = execution::transform_executor(inline_executor(), custom_hints::tracing{true});
   ex1.execute([]{ std::cout << "we made it\n"; });
 
-  auto ex2 = execution::prefer(inline_executor(), custom_hints::tracing{true});
-  ex2.execute([]{ std::cout << "we made it with a preference\n"; });
+  auto ex2 = execution::try_transform_executor(inline_executor(), custom_hints::tracing{true});
+  ex2.execute([]{ std::cout << "we made it with a try_transform_executorence\n"; });
 
-  // No default means we can't require arbitrary executors using our custom hint ...
-  static_assert(!execution::can_require_v<static_thread_pool::executor_type, custom_hints::tracing>, "can't require tracing from static_thread_pool");
+  // No default means we can't transform_executor arbitrary executors using our custom hint ...
+  static_assert(!execution::can_transform_executor_v<static_thread_pool::executor_type, custom_hints::tracing>, "can't transform_executor tracing from static_thread_pool");
 
-  // ... but we can still ask for it as a preference.
-  auto ex3 = execution::prefer(pool.executor(), custom_hints::tracing{true});
-  ex3.execute([]{ std::cout << "we made it again with a preference\n"; });
+  // ... but we can still ask for it as a try_transform_executorence.
+  auto ex3 = execution::try_transform_executor(pool.executor(), custom_hints::tracing{true});
+  ex3.execute([]{ std::cout << "we made it again with a try_transform_executorence\n"; });
   pool.wait();
 }

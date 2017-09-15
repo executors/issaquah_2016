@@ -15,7 +15,7 @@ void my_twoway_operation_1(const execution::executor& tex, int n,
   {
     // Nothing to do. Operation finishes immediately.
     // Specify non-blocking to prevent stack overflow.
-    cex.require(execution::never_blocking).execute(
+    cex.transform_executor(execution::never_blocking).execute(
         [h = std::move(h), n]() mutable
         {
           h(n);
@@ -24,12 +24,12 @@ void my_twoway_operation_1(const execution::executor& tex, int n,
   else
   {
     // Simulate an asynchronous operation.
-    tex.require(execution::never_blocking).execute(
-        [n, cex = execution::prefer(cex, execution::outstanding_work), h = std::move(h)]() mutable
+    tex.transform_executor(execution::never_blocking).execute(
+        [n, cex = execution::try_transform_executor(cex, execution::outstanding_work), h = std::move(h)]() mutable
         {
           int result = n * 2;
           std::this_thread::sleep_for(std::chrono::seconds(1)); // Simulate long running work.
-          execution::prefer(cex, execution::possibly_blocking).execute(
+          execution::try_transform_executor(cex, execution::possibly_blocking).execute(
               [h = std::move(h), result]() mutable
               {
                 h(result);
@@ -69,8 +69,8 @@ void my_twoway_operation_2(const execution::executor& tex, int n, int m,
   // so we save the stored executors with that attribute rebound in.
   my_twoway_operation_1(tex, n, cex,
     my_twoway_operation_2_impl<CompletionHandler>{
-        execution::prefer(tex, execution::continuation), 0, m,
-        execution::prefer(cex, execution::continuation), std::move(h)});
+        execution::try_transform_executor(tex, execution::continuation), 0, m,
+        execution::try_transform_executor(cex, execution::continuation), std::move(h)});
 }
 
 int main()

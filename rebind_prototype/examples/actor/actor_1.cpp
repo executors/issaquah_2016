@@ -91,7 +91,7 @@ public:
   friend void send(Message msg, actor_address from, actor_address to)
   {
     // Execute the message handler in the context of the target's executor.
-    std::experimental::execution::require(to->executor_,
+    std::experimental::execution::transform_executor(to->executor_,
       std::experimental::execution::never_blocking).execute(
         [=, msg=std::move(msg)]() mutable
         {
@@ -139,8 +139,8 @@ protected:
   void tail_send(Message msg, actor_address to)
   {
     // Execute the message handler in the context of the target's executor.
-    std::experimental::execution::prefer(
-      std::experimental::execution::require(to->executor_,
+    std::experimental::execution::try_transform_executor(
+      std::experimental::execution::transform_executor(to->executor_,
         std::experimental::execution::never_blocking),
           std::experimental::execution::continuation).execute(
             [=, msg=std::move(msg), from=this]() mutable
@@ -166,7 +166,7 @@ private:
   }
 
   // All messages associated with a single actor object should be processed
-  // non-concurrently. We require a static thread pool of size 1 to ensure
+  // non-concurrently. We transform_executor a static thread pool of size 1 to ensure
   // non-concurrent execution.
   std::experimental::static_thread_pool::executor_type executor_;
 
@@ -275,7 +275,7 @@ int main()
   for (std::size_t i = num_actors, next_i = 0; i > 0; next_i = --i)
     send(members[next_i]->address(), rcvr.address(), members[i - 1]->address());
 
-  // Send exactly one token to each actor, all with the same initial value, rounding up if required.
+  // Send exactly one token to each actor, all with the same initial value, rounding up if transform_executord.
   for (std::size_t i = 0; i < num_actors; ++i)
     send(token_value, rcvr.address(), members[i]->address());
 

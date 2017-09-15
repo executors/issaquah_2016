@@ -34,7 +34,7 @@ class system_thread_pool_bulk_executor
       return false;
     }
 
-    system_thread_pool_bulk_executor require(execution::bulk_parallel_execution_t) const { return *this; }
+    system_thread_pool_bulk_executor transform_executor(execution::bulk_parallel_execution_t) const { return *this; }
 
     template<class Function, class ResultFactory, class SharedFactory>
     auto bulk_twoway_execute(Function f, size_t n, ResultFactory rf, SharedFactory sf) const
@@ -61,7 +61,7 @@ class basic_execution_policy
     //);
 
     using executor_type = Executor;
-    using bulk_forward_progress_requirement = BulkForwardProgressRequirement;
+    using bulk_forward_progress_transform_executorment = BulkForwardProgressRequirement;
 
     basic_execution_policy() = default;
 
@@ -86,7 +86,7 @@ class basic_execution_policy
     basic_execution_policy<BulkForwardProgressRequirement,OtherExecutor> on(OtherExecutor&& exec) const
     {
       return basic_execution_policy<BulkForwardProgressRequirement,OtherExecutor>(
-          execution::require(std::forward<OtherExecutor>(exec), BulkForwardProgressRequirement{}));
+          execution::transform_executor(std::forward<OtherExecutor>(exec), BulkForwardProgressRequirement{}));
     }
 
     executor_type executor() const
@@ -117,7 +117,7 @@ void for_each(ExecutionPolicy&& policy, RandomAccessIterator first, RandomAccess
 {
   auto n = last - first;
 
-  auto twoway_bulk_exec = execution::require(policy.executor(), execution::bulk, execution::twoway);
+  auto twoway_bulk_exec = execution::transform_executor(policy.executor(), execution::bulk, execution::twoway);
 
   twoway_bulk_exec.bulk_twoway_execute([=](size_t idx, impl::ignored&)
   {

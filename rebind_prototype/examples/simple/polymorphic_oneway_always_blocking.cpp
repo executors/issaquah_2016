@@ -7,6 +7,6 @@ using std::experimental::static_thread_pool;
 int main()
 {
   static_thread_pool pool{1};
-  execution::executor ex = pool.executor().require(execution::always_blocking);
+  execution::executor ex = pool.executor().transform_executor(execution::always_blocking);
   ex.execute([]{ std::cout << "we made it\n"; });
 }
