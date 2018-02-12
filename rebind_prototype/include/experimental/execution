@@ -10,6 +10,36 @@ namespace experimental {
 inline namespace executors_v1 {
 namespace execution {
 
+namespace
+{
+  // Require customization point.
+  constexpr const auto& require = require_impl::customization_point<>;
+
+  // Prefer customization point.
+  constexpr const auto& prefer = prefer_impl::customization_point<>;
+
+  // Query customization point.
+  constexpr const auto& query = query_impl::customization_point<>;
+}
+
+// Type trait to determine whether the require customization point is valid for the specified arguments.
+template<class Executor, class... Properties> struct can_require;
+
+template<class Executor, class... Properties>
+  constexpr bool can_require_v = can_require<Executor, Properties...>::value;
+
+// Type trait to determine whether the prefer customization point is valid for the specified arguments.
+template<class Executor, class... Properties> struct can_prefer;
+
+template<class Executor, class... Properties>
+  constexpr bool can_prefer_v = can_prefer<Executor, Properties...>::value;
+
+// Type trait to determine whether the query customization point is valid for the specified arguments.
+template<class Executor, class Property> struct can_query;
+
+template<class Executor, class Property>
+  constexpr bool can_query_v = can_query<Executor, Property>::value;
+
 // Associated execution context.
 struct context_t;
 
@@ -74,36 +104,6 @@ template<class Executor> struct executor_index;
 template<class Executor> using executor_shape_t = typename executor_shape<Executor>::type;
 template<class Executor> using executor_index_t = typename executor_index<Executor>::type;
 
-namespace
-{
-  // Require customization point.
-  constexpr const auto& require = require_impl::customization_point<>;
-
-  // Prefer customization point.
-  constexpr const auto& prefer = prefer_impl::customization_point<>;
-
-  // Query customization point.
-  constexpr const auto& query = query_impl::customization_point<>;
-}
-
-// Type trait to determine whether the require customization point is valid for the specified arguments.
-template<class Executor, class... Properties> struct can_require;
-
-template<class Executor, class... Properties>
-  constexpr bool can_require_v = can_require<Executor, Properties...>::value;
-
-// Type trait to determine whether the prefer customization point is valid for the specified arguments.
-template<class Executor, class... Properties> struct can_prefer;
-
-template<class Executor, class... Properties>
-  constexpr bool can_prefer_v = can_prefer<Executor, Properties...>::value;
-
-// Type trait to determine whether the query customization point is valid for the specified arguments.
-template<class Executor, class Property> struct can_query;
-
-template<class Executor, class Property>
-  constexpr bool can_query_v = can_query<Executor, Property>::value;
-
 // Polymorphic wrappers.
 class bad_executor;
 class executor;
@@ -113,6 +113,9 @@ class executor;
 } // namespace experimental
 } // namespace std
 
+#include <experimental/bits/can_require.h>
+#include <experimental/bits/can_prefer.h>
+#include <experimental/bits/can_query.h>
 #include <experimental/bits/is_oneway_executor.h>
 #include <experimental/bits/is_twoway_executor.h>
 #include <experimental/bits/is_bulk_oneway_executor.h>
@@ -129,9 +132,6 @@ class executor;
 #include <experimental/bits/executor_future.h>
 #include <experimental/bits/executor_shape.h>
 #include <experimental/bits/executor_index.h>
-#include <experimental/bits/can_require.h>
-#include <experimental/bits/can_prefer.h>
-#include <experimental/bits/can_query.h>
 #include <experimental/bits/executor.h>
 
 #endif // STD_EXPERIMENTAL_EXECUTION
