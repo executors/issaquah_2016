@@ -161,26 +161,11 @@ struct oneway_t
   using polymorphic_query_result_type = bool;
 
   template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, oneway_t>::value &&
-      (is_oneway_executor<Executor>::value
-       || is_bulk_oneway_executor<Executor>::value);
+    static constexpr bool static_query_v
+      = is_oneway_executor<Executor>::value
+        || is_bulk_oneway_executor<Executor>::value;
 
-  // Default require for oneway leaves oneway executors as is.
-
-  template<class Executor>
-    friend typename std::enable_if<
-      is_oneway_executor<Executor>::value
-        || is_bulk_oneway_executor<Executor>::value, Executor>::type
-          require(Executor ex, oneway_t) { return std::move(ex); }
-
-  // Default query for oneway always returns true for oneway executors.
-
-  template<class Executor>
-    friend constexpr typename std::enable_if<
-      is_oneway_executor<Executor>::value
-        || is_bulk_oneway_executor<Executor>::value, bool>::type
-          query(const Executor&, oneway_t) { return true; }
+  static constexpr bool value() { return true; }
 };
 
 constexpr oneway_t oneway;
@@ -193,12 +178,13 @@ struct twoway_t
   using polymorphic_query_result_type = bool;
 
   template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, twoway_t>::value &&
-      (is_twoway_executor<Executor>::value
-       || is_bulk_twoway_executor<Executor>::value);
+    static constexpr bool static_query_v
+      = is_twoway_executor<Executor>::value
+        || is_bulk_twoway_executor<Executor>::value;
 
-  // Default require for twoway adapts oneway executors, leaves twoway executors as is.
+  static constexpr bool value() { return true; }
+
+  // Default require for twoway adapts oneway executors.
 
   template<class Executor>
     friend typename std::enable_if<
@@ -207,20 +193,6 @@ struct twoway_t
           && can_query<Executor, adaptable_blocking_t>::value,
             directionality_impl::twoway_adapter<Executor>>::type
               require(Executor ex, twoway_t) { return directionality_impl::twoway_adapter<Executor>(std::move(ex)); }
-
-  template<class Executor>
-    friend typename std::enable_if<
-      is_twoway_executor<Executor>::value
-        || is_bulk_twoway_executor<Executor>::value, Executor>::type
-          require(Executor ex, twoway_t) { return std::move(ex); }
-
-  // Default query for twoway always returns true for twoway executors.
-
-  template<class Executor>
-    friend constexpr typename std::enable_if<
-      is_twoway_executor<Executor>::value
-        || is_bulk_twoway_executor<Executor>::value, bool>::type
-          query(const Executor&, twoway_t) { return true; }
 };
 
 constexpr twoway_t twoway;

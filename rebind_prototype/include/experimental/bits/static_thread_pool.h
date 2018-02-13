@@ -39,18 +39,6 @@ class static_thread_pool
     // Associated execution context.
     static_thread_pool& query(execution::context_t) const noexcept { return *pool_; }
 
-    // Directionality. Both kinds supported, so requiring does not change type.
-    executor_impl require(execution::oneway_t) const { return *this; }
-    executor_impl require(execution::twoway_t) const { return *this; }
-    bool query(execution::oneway_t) const { return true; }
-    bool query(execution::twoway_t) const { return true; }
-
-    // Cardinality. Both kinds supported, so requiring does not change type.
-    executor_impl require(execution::single_t) const { return *this; }
-    executor_impl require(execution::bulk_t) const { return *this; }
-    bool query(execution::single_t) const { return true; }
-    bool query(execution::bulk_t) const { return true; }
-
     // Blocking modes.
     executor_impl<execution::never_blocking_t, Continuation, Work, ProtoAllocator>
       require(execution::never_blocking_t) const { return {pool_, allocator_}; };

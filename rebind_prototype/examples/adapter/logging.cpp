@@ -86,11 +86,11 @@ int main()
   logging_executor<static_thread_pool::executor_type> ex1("LOG", pool.executor());
   assert(&execution::query(ex1, execution::context) == &pool);
   ex1.execute([]{ std::cout << "we made it\n"; });
-  auto ex2 = ex1.require(execution::always_blocking);
+  auto ex2 = execution::require(ex1, execution::always_blocking);
   ex2.execute([]{ std::cout << "we made it again\n"; });
-  auto ex3 = ex2.require(execution::never_blocking).require(execution::continuation);
+  auto ex3 = execution::require(ex2, execution::never_blocking, execution::continuation);
   ex3.execute([]{ std::cout << "and again\n"; });
-  auto ex4 = ex1.require(execution::twoway);
+  auto ex4 = execution::require(ex1, execution::twoway);
   future<int> f = ex4.twoway_execute([]{ std::cout << "computing result\n"; return 42; });
   pool.wait();
   std::cout << "result is " << f.get() << "\n";

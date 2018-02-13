@@ -10,10 +10,6 @@ struct default_allocator_t
 {
   static constexpr bool is_requirable = true;
   static constexpr bool is_preferable = true;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, default_allocator_t>::value;
 };
 
 constexpr default_allocator_t default_allocator;
@@ -24,11 +20,6 @@ struct allocator_t
   static constexpr bool is_requirable = true;
   static constexpr bool is_preferable = true;
 
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, allocator_t>::value
-        && can_query<Executor, allocator_t<void>>::value;
-
   ProtoAllocator alloc;
 };
 
@@ -37,10 +28,6 @@ struct allocator_t<void>
 {
   static constexpr bool is_requirable = false;
   static constexpr bool is_preferable = false;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, allocator_t<void>>::value;
 
   template<class ProtoAllocator>
   allocator_t<ProtoAllocator> operator()(const ProtoAllocator& a) const

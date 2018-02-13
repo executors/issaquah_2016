@@ -5,47 +5,30 @@ namespace std {
 namespace experimental {
 inline namespace executors_v1 {
 namespace execution {
+namespace bulk_execution_impl {
 
-struct bulk_sequenced_execution_t
+template<class Derived>
+struct property_base
 {
   static constexpr bool is_requirable = true;
   static constexpr bool is_preferable = true;
 
   using polymorphic_query_result_type = bool;
 
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, bulk_sequenced_execution_t>::value;
+  template<class Executor, class = decltype(Executor::query(*static_cast<Derived*>(0)))>
+    static constexpr bool static_query_v = Executor::query(Derived());
+
+  static constexpr bool value() { return true; }
 };
+
+} // namespace bulk_execution_impl
+
+struct bulk_sequenced_execution_t : bulk_execution_impl::property_base<bulk_sequenced_execution_t> {};
+struct bulk_parallel_execution_t : bulk_execution_impl::property_base<bulk_parallel_execution_t> {};
+struct bulk_unsequenced_execution_t : bulk_execution_impl::property_base<bulk_unsequenced_execution_t> {};
 
 constexpr bulk_sequenced_execution_t bulk_sequenced_execution;
-
-struct bulk_parallel_execution_t
-{
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  using polymorphic_query_result_type = bool;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, bulk_parallel_execution_t>::value;
-};
-
 constexpr bulk_parallel_execution_t bulk_parallel_execution;
-
-struct bulk_unsequenced_execution_t
-{
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  using polymorphic_query_result_type = bool;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, bulk_unsequenced_execution_t>::value;
-};
-
 constexpr bulk_unsequenced_execution_t bulk_unsequenced_execution;
 
 } // namespace execution

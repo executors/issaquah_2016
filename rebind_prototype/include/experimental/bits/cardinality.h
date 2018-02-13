@@ -163,26 +163,11 @@ struct single_t
   using polymorphic_query_result_type = bool;
 
   template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, single_t>::value &&
-      (is_oneway_executor<Executor>::value
-       || is_twoway_executor<Executor>::value);
+    static constexpr bool static_query_v
+      = is_oneway_executor<Executor>::value
+        || is_twoway_executor<Executor>::value;
 
-  // Default require for single leaves single executors as is.
-
-  template<class Executor>
-    friend constexpr typename std::enable_if<
-      is_oneway_executor<Executor>::value
-        || is_twoway_executor<Executor>::value, Executor>::type
-          require(Executor ex, single_t) { return std::move(ex); }
-
-  // Default query for single always returns true for single executors.
-
-  template<class Executor>
-    friend constexpr typename std::enable_if<
-      is_oneway_executor<Executor>::value
-        || is_twoway_executor<Executor>::value, bool>::type
-          query(const Executor&, single_t) { return true; }
+  static constexpr bool value() { return true; }
 };
 
 constexpr single_t single;
@@ -195,32 +180,19 @@ struct bulk_t
   using polymorphic_query_result_type = bool;
 
   template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, bulk_t>::value &&
-      (is_bulk_oneway_executor<Executor>::value
-       || is_bulk_twoway_executor<Executor>::value);
+    static constexpr bool static_query_v
+      = is_bulk_oneway_executor<Executor>::value
+       || is_bulk_twoway_executor<Executor>::value;
 
-  // Default require for bulk adapts single executors, leaves bulk executors as is.
+  static constexpr bool value() { return true; }
+
+  // Default require for bulk adapts single executors.
 
   template<class Executor>
     friend typename std::enable_if<is_oneway_executor<Executor>::value
       && !(is_bulk_oneway_executor<Executor>::value || is_bulk_twoway_executor<Executor>::value),
         cardinality_impl::bulk_adapter<Executor>>::type
           require(Executor ex, bulk_t) { return cardinality_impl::bulk_adapter<Executor>(std::move(ex)); }
-
-  template<class Executor>
-    friend constexpr typename std::enable_if<
-      is_bulk_oneway_executor<Executor>::value
-        || is_bulk_twoway_executor<Executor>::value, Executor>::type
-          require(Executor ex, bulk_t) { return std::move(ex); }
-
-  // Default query for bulk always returns true for bulk executors.
-
-  template<class Executor>
-    friend constexpr typename std::enable_if<
-      is_bulk_oneway_executor<Executor>::value
-        || is_bulk_twoway_executor<Executor>::value, bool>::type
-          query(const Executor&, bulk_t) { return true; }
 };
 
 constexpr bulk_t bulk;

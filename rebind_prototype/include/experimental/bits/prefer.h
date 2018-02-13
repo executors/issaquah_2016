@@ -3,6 +3,7 @@
 
 #include <experimental/bits/has_require_member.h>
 #include <experimental/bits/has_prefer_free.h>
+#include <experimental/bits/is_constexpr_present.h>
 
 namespace std {
 namespace experimental {
@@ -13,14 +14,21 @@ namespace prefer_impl {
 struct prefer_fn
 {
   template<class Executor, class Property>
+  constexpr auto operator()(Executor&& ex, Property&&) const
+    -> typename std::enable_if<std::decay<Property>::type::is_preferable
+      && is_constexpr_present_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
+        typename std::decay<Executor>::type>::type
+  {
+    return std::forward<Executor>(ex);
+  }
+
+  template<class Executor, class Property>
   constexpr auto operator()(Executor&& ex, Property&& p) const
     noexcept(noexcept(std::forward<Executor>(ex).require(std::forward<Property>(p))))
-    -> typename std::enable_if<std::decay<Property>::type::is_preferable,
-      decltype(std::forward<Executor>(ex).require(std::forward<Property>(p)))>::type
+    -> typename std::enable_if<std::decay<Property>::type::is_preferable
+      && !is_constexpr_present_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
+        decltype(std::forward<Executor>(ex).require(std::forward<Property>(p)))>::type
   {
-    static_assert(std::decay<Property>::type::template is_supportable<
-      decltype(std::forward<Executor>(ex).require(std::forward<Property>(p)))>,
-        "requested property is not supportable by resulting executor type");
     return std::forward<Executor>(ex).require(std::forward<Property>(p));
   }
 
@@ -28,9 +36,10 @@ struct prefer_fn
   constexpr auto operator()(Executor&& ex, Property&& p) const
     noexcept(noexcept(prefer(std::forward<Executor>(ex), std::forward<Property>(p))))
     -> typename std::enable_if<std::decay<Property>::type::is_preferable
-      && !has_require_member_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value
-      && has_prefer_free_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
-        decltype(prefer(std::forward<Executor>(ex), std::forward<Property>(p)))>::type
+      && !is_constexpr_present_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value
+        && !has_require_member_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value
+          && has_prefer_free_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
+            decltype(prefer(std::forward<Executor>(ex), std::forward<Property>(p)))>::type
   {
     return prefer(std::forward<Executor>(ex), std::forward<Property>(p));
   }
@@ -38,11 +47,12 @@ struct prefer_fn
   template<class Executor, class Property>
   constexpr auto operator()(Executor&& ex, Property&&) const noexcept
     -> typename std::enable_if<std::decay<Property>::type::is_preferable
-      && !has_require_member_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value
-      && !has_prefer_free_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
-        typename std::decay<Executor>::type>::type
+      && !is_constexpr_present_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value
+        && !has_require_member_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value
+          && !has_prefer_free_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
+            typename std::decay<Executor>::type>::type
   {
-    return ex;
+    return std::forward<Executor>(ex);
   }
 
   template<class Executor, class Property0, class Property1, class... PropertyN>
