@@ -1,15 +1,27 @@
 #include <chrono>
 #include <experimental/thread_pool>
+#include <functional>
 #include <iostream>
 #include <thread>
 
 namespace execution = std::experimental::execution;
 using std::experimental::static_thread_pool;
 
+using task_executor = execution::executor<
+        execution::oneway_t,
+        execution::single_t,
+        execution::never_blocking_t>;
+
+using completion_executor = execution::executor<
+        execution::oneway_t,
+        execution::single_t,
+        execution::never_blocking_t,
+        execution::prefer_only<execution::possibly_blocking_t>,
+        execution::prefer_only<execution::outstanding_work_t>>;
+
 // An operation that doubles a value asynchronously.
-template <class CompletionHandler>
-void my_twoway_operation_1(const execution::executor& tex, int n,
-    const execution::executor& cex, CompletionHandler h)
+void my_twoway_operation_1(const task_executor& tex, int n,
+    const completion_executor& cex, std::function<void(int)> h)
 {
   if (n == 0)
   {

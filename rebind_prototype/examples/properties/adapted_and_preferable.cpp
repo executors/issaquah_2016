@@ -140,14 +140,14 @@ int main()
   static_assert(!execution::can_query_v<decltype(ex4), custom_props::tracing>, "cannot query tracing for static_thread_pool::executor");
   ex4.execute([]{ std::cout << "we made it again with a preference\n"; });
 
-  execution::executor ex5 = pool.executor();
+  execution::executor<execution::oneway_t, execution::single_t, custom_props::tracing> ex5 = pool.executor();
   auto ex6 = execution::require(ex5, custom_props::tracing{true});
   assert(execution::query(ex6, custom_props::tracing{}));
   ex6.execute([]{ std::cout << "and again\n"; });
 
-  execution::executor ex7 = pool.executor();
+  execution::executor<execution::oneway_t, execution::single_t, custom_props::tracing> ex7 = pool.executor();
   auto ex8 = execution::prefer(ex7, custom_props::tracing{true});
-  static_assert(!execution::can_query_v<decltype(ex8), custom_props::tracing>, "cannot query tracing for static_thread_pool::executor");
+  static_assert(execution::can_query_v<decltype(ex8), custom_props::tracing>, "can query tracing for execution::executor");
   ex8.execute([]{ std::cout << "and again with a preference\n"; });
 
   pool.wait();

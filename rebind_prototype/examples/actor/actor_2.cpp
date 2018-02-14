@@ -101,8 +101,14 @@ public:
   }
 
 protected:
+  using executor_type = std::experimental::execution::executor<
+      std::experimental::execution::oneway_t,
+      std::experimental::execution::single_t,
+      std::experimental::execution::never_blocking_t,
+      std::experimental::execution::prefer_only<std::experimental::execution::continuation_t>>;
+
   // Construct the actor to use the specified pool for all message handlers.
-  actor(const std::experimental::execution::executor& ex)
+  actor(const executor_type& ex)
     : executor_(ex)
   {
   }
@@ -169,7 +175,7 @@ private:
   // All messages associated with a single actor object should be processed
   // non-concurrently. We require that the supplied executor guarantees
   // non-concurrent execution.
-  std::experimental::execution::executor executor_;
+  executor_type executor_;
 
   std::vector<std::shared_ptr<message_handler_base>> handlers_;
 };
@@ -221,7 +227,7 @@ private:
 class member : public actor
 {
 public:
-  explicit member(const std::experimental::execution::executor& ex)
+  explicit member(const executor_type& ex)
     : actor(ex)
   {
     register_handler(&member::init_handler);

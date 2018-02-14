@@ -136,12 +136,12 @@ int main()
 
   static_assert(!execution::can_prefer_v<static_thread_pool::executor_type, custom_props::tracing>, "cannot prefer");
 
-  execution::executor ex5 = pool.executor();
+  execution::executor<execution::oneway_t, execution::single_t, custom_props::tracing> ex5 = pool.executor();
   auto ex6 = execution::require(ex5, custom_props::tracing{true});
   assert(execution::query(ex6, custom_props::tracing{}));
   ex6.execute([]{ std::cout << "and again\n"; });
 
-  static_assert(!execution::can_prefer_v<execution::executor, custom_props::tracing>, "cannot prefer");
+  static_assert(!execution::can_prefer_v<decltype(ex5), custom_props::tracing>, "cannot prefer");
 
   pool.wait();
 }

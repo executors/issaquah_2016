@@ -2,9 +2,19 @@
 #include <experimental/thread_pool>
 
 namespace execution = std::experimental::execution;
-using execution::executor;
 using std::experimental::static_thread_pool;
 using std::experimental::executors_v1::future;
+
+using executor = execution::executor<
+    execution::oneway_t,
+    execution::twoway_t,
+    execution::single_t,
+    execution::bulk_t,
+    execution::thread_execution_mapping_t,
+    execution::never_blocking_t,
+    execution::possibly_blocking_t,
+    execution::always_blocking_t
+  >;
 
 void executor_compile_test()
 {
@@ -45,14 +55,14 @@ void executor_compile_test()
 
   ex1.assign(pool.executor());
 
-  ex1 = cex1.require(execution::oneway);
-  ex1 = cex1.require(execution::twoway);
-  ex1 = cex1.require(execution::single);
-  ex1 = cex1.require(execution::bulk);
-  ex1 = cex1.require(execution::thread_execution_mapping);
-  ex1 = cex1.require(execution::never_blocking);
-  ex1 = cex1.require(execution::possibly_blocking);
-  ex1 = cex1.require(execution::always_blocking);
+  ex1 = execution::require(cex1, execution::oneway);
+  ex1 = execution::require(cex1, execution::twoway);
+  ex1 = execution::require(cex1, execution::single);
+  ex1 = execution::require(cex1, execution::bulk);
+  ex1 = execution::require(cex1, execution::thread_execution_mapping);
+  ex1 = execution::require(cex1, execution::never_blocking);
+  ex1 = execution::require(cex1, execution::possibly_blocking);
+  ex1 = execution::require(cex1, execution::always_blocking);
 
   ex1 = execution::prefer(cex1, execution::thread_execution_mapping);
   ex1 = execution::prefer(cex1, execution::never_blocking);
@@ -66,9 +76,6 @@ void executor_compile_test()
   ex1 = execution::prefer(cex1, execution::bulk_parallel_execution);
   ex1 = execution::prefer(cex1, execution::bulk_unsequenced_execution);
   ex1 = execution::prefer(cex1, execution::new_thread_execution_mapping);
-
-  auto& context = execution::query(cex1, execution::context);
-  (void)context;
 
   cex1.execute([]{});
 
