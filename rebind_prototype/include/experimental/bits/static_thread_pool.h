@@ -76,11 +76,10 @@ class static_thread_pool
 
     // Allocator.
     executor_impl<Blocking, Continuation, Work, std::allocator<void>>
-      require(const execution::default_allocator_t&) const { return {pool_, std::allocator<void>{}}; };
+      require(const execution::allocator_t<void>&) const { return {pool_, std::allocator<void>{}}; };
     template<class NewProtoAllocator>
       executor_impl<Blocking, Continuation, Work, NewProtoAllocator>
-        require(const execution::allocator_t<NewProtoAllocator>& a) const { return {pool_, a.alloc}; };
-    ProtoAllocator query(const execution::default_allocator_t&) const noexcept { return allocator_; }
+        require(const execution::allocator_t<NewProtoAllocator>& a) const { return {pool_, a.value()}; };
     ProtoAllocator query(const execution::allocator_t<ProtoAllocator>&) const noexcept { return allocator_; }
     ProtoAllocator query(const execution::allocator_t<void>&) const noexcept { return allocator_; }
 

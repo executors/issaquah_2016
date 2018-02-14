@@ -78,7 +78,6 @@ struct thread_execution_mapping_t;
 struct new_thread_execution_mapping_t;
 
 // Memory allocations.
-struct default_allocator_t;
 template<class ProtoAllocator> struct allocator_t;
 
 // Type traits to determine conformance to executor type requirements.

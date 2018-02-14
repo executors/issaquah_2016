@@ -5,34 +5,35 @@ namespace std {
 namespace experimental {
 inline namespace executors_v1 {
 namespace execution {
+namespace allocator_impl {
 
-struct default_allocator_t
+template<class Derived>
+struct property_base
 {
   static constexpr bool is_requirable = true;
   static constexpr bool is_preferable = true;
+
+  template<class Executor, class Type = decltype(Executor::query(*static_cast<Derived*>(0)))>
+    static constexpr Type static_query_v = Executor::query(Derived());
 };
 
-constexpr default_allocator_t default_allocator;
+} // namespace allocator_impl
 
 template<class ProtoAllocator>
-struct allocator_t
+struct allocator_t : allocator_impl::property_base<allocator_t<ProtoAllocator>>
 {
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  ProtoAllocator alloc;
+  constexpr explicit allocator_t(const ProtoAllocator& a) : alloc_(a) {}
+  constexpr ProtoAllocator value() const { return alloc_; }
+  ProtoAllocator alloc_;
 };
 
 template<>
-struct allocator_t<void>
+struct allocator_t<void> : allocator_impl::property_base<allocator_t<void>>
 {
-  static constexpr bool is_requirable = false;
-  static constexpr bool is_preferable = false;
-
   template<class ProtoAllocator>
   allocator_t<ProtoAllocator> operator()(const ProtoAllocator& a) const
   {
-    return {a};
+    return allocator_t<ProtoAllocator>(a);
   }
 };
 
