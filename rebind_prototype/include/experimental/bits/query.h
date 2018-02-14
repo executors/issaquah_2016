@@ -16,7 +16,7 @@ struct query_fn
   template<class Executor, class Property>
   constexpr auto operator()(Executor&&, Property&&) const
     -> typename std::enable_if<is_constexpr_present_impl::eval<typename std::decay<Executor>::type,
-      typename std::decay<Property>::type>::value, decltype(Property::value())>::type
+      typename std::decay<Property>::type>::value, decltype(std::decay<Property>::type::value())>::type
   {
     return Property::template static_query_v<typename std::decay<Executor>::type>;
   }

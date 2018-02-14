@@ -168,6 +168,21 @@ struct property_base
   static constexpr bool value() { return true; }
 };
 
+template<class Executor, class Property>
+constexpr auto possibly_blocking_static_query()
+  -> typename std::enable_if<!can_query_v<Executor, never_blocking_t>
+    && !can_query_v<Executor, always_blocking_t>, bool>::type
+      { return true; }
+
+template<class Executor, class Property>
+constexpr auto possibly_blocking_static_query()
+  -> typename std::enable_if<can_query_v<Executor, never_blocking_t>
+    || can_query_v<Executor, always_blocking_t>,
+      decltype(Executor::query(Property()))>::type
+{
+  return Executor::query(Property());
+}
+
 template<class Derived>
 struct possibly_blocking_base
 {
@@ -176,14 +191,8 @@ struct possibly_blocking_base
 
   using polymorphic_query_result_type = bool;
 
-  template<class Executor, class = typename std::enable_if<
-    !can_query_v<Executor, never_blocking_t> && !can_query_v<Executor, always_blocking_t>>::type>
-      static constexpr bool static_query_v = true;
-
-  /*template<class Executor, class = typename std::enable_if<
-    can_query_v<Executor, never_blocking_t> || can_query_v<Executor, always_blocking_t>,
-      decltype(Executor::query(*static_cast<Derived*>(0)))>::type>
-        static constexpr bool static_query_v = Executor::query(Derived());*/
+  template<class Executor, class = decltype(possibly_blocking_static_query<Executor, Derived>())>
+    static constexpr bool static_query_v = possibly_blocking_static_query<Executor, Derived>();
 
   static constexpr bool value() { return true; }
 };
@@ -192,16 +201,7 @@ struct possibly_blocking_base
 
 struct never_blocking_t : blocking_impl::property_base<never_blocking_t> {};
 
-struct possibly_blocking_t : blocking_impl::possibly_blocking_base<possibly_blocking_t>
-{
-  // Default query always returns true for all executors that have no other
-  // blocking property specified, as possibly blocking is the default.
-
-  template<class Executor>
-    friend constexpr typename enable_if<!can_query<Executor, always_blocking_t>::value
-      && !can_query<Executor, never_blocking_t>::value, bool>::type
-        query(const Executor&, const possibly_blocking_t&) { return true; }
-};
+struct possibly_blocking_t : blocking_impl::possibly_blocking_base<possibly_blocking_t> {};
 
 struct always_blocking_t : blocking_impl::property_base<always_blocking_t>
 {
