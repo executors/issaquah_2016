@@ -8,7 +8,7 @@ using std::experimental::executors_v1::future;
 int main()
 {
   static_thread_pool pool{1};
-  execution::executor ex = pool.executor().require(execution::never_blocking);
+  execution::executor ex = execution::require(pool.executor(), execution::never_blocking);
   future<int> f = ex.twoway_execute([]{ return 42; });
   std::cout << "result is " << f.get() << "\n";
 }
