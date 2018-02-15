@@ -15,10 +15,6 @@ namespace custom_props {
     static constexpr bool is_preferable = true;
     using polymorphic_query_result_type = int;
 
-    template <class Executor>
-      static constexpr bool is_supportable
-        = execution::can_query_v<Executor, priority>;
-
     int value = 1;
   };
 
