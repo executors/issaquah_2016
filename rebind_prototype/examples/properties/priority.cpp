@@ -160,6 +160,7 @@ int main()
   auto low = execution::require(ex, custom_props::low_priority);
   auto med = execution::require(ex, custom_props::normal_priority);
   auto high = execution::require(ex, custom_props::high_priority);
+  execution::executor<execution::oneway_t, execution::single_t, custom_props::priority> poly_high(high);
   prefer_low.execute([]{ std::cout << "1\n"; });
   low.execute([]{ std::cout << "11\n"; });
   low.execute([]{ std::cout << "111\n"; });
@@ -168,6 +169,8 @@ int main()
   high.execute([]{ std::cout << "3\n"; });
   high.execute([]{ std::cout << "33\n"; });
   high.execute([]{ std::cout << "333\n"; });
+  poly_high.execute([]{ std::cout << "3333\n"; });
   execution::require(ex, custom_props::priority{-1}).execute([&]{ sched.stop(); });
   sched.run();
+  std::cout << "polymorphic query result = " << execution::query(poly_high, custom_props::priority{}) << "\n";
 }

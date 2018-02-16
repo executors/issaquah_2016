@@ -161,7 +161,7 @@ struct impl_base
   virtual bool equals(const impl_base* e) const noexcept = 0;
   virtual impl_base* require(const type_info&, const void* p) const = 0;
   virtual impl_base* prefer(const type_info&, const void* p) const = 0;
-  virtual bool query(const type_info&, const void* p) const = 0;
+  virtual void* query(const type_info&, const void* p) const = 0;
 };
 
 template<class Executor, class... SupportableProperties>
@@ -343,26 +343,26 @@ struct impl : impl_base
     return this->prefer_helper(property_list<SupportableProperties...>{}, t, p);
   }
 
-  bool query_helper(property_list<>, const type_info&, const void*) const
+  void* query_helper(property_list<>, const type_info&, const void*) const
   {
-    return false;
+    return nullptr;
   }
 
   template<class Head, class... Tail>
-  bool query_helper(property_list<Head, Tail...>, const type_info& t, const void* p, typename std::enable_if<can_query_v<Executor, Head>>::type* = 0) const
+  void* query_helper(property_list<Head, Tail...>, const type_info& t, const void* p, typename std::enable_if<can_query_v<Executor, Head>>::type* = 0) const
   {
     if (t == typeid(Head))
-      return execution::query(executor_, *static_cast<const Head*>(p));
+      return new typename Head::polymorphic_query_result_type(execution::query(executor_, *static_cast<const Head*>(p)));
     return query_helper(property_list<Tail...>{}, t, p);
   }
 
   template<class Head, class... Tail>
-  bool query_helper(property_list<Head, Tail...>, const type_info& t, const void* p, typename std::enable_if<!can_query_v<Executor, Head>>::type* = 0) const
+  void* query_helper(property_list<Head, Tail...>, const type_info& t, const void* p, typename std::enable_if<!can_query_v<Executor, Head>>::type* = 0) const
   {
     return query_helper(property_list<Tail...>{}, t, p);
   }
 
-  virtual bool query(const type_info& t, const void* p) const
+  virtual void* query(const type_info& t, const void* p) const
   {
     return this->query_helper(property_list<SupportableProperties...>{}, t, p);
   }
@@ -489,13 +489,15 @@ public:
     return e.get_impl() ? e.get_impl()->prefer(typeid(p1), &p1) : throw bad_executor();
   }
 
-  template<class Property,
-    class = typename std::enable_if<
-      executor_impl::contains_convertible_property_v<Property, SupportableProperties...>>::type>
-  bool query(const Property& p) const
+  template<class Property>
+  auto query(const Property& p) const
+    -> typename executor_impl::find_convertible_property_t<Property, SupportableProperties...>::polymorphic_query_result_type
   {
     executor_impl::find_convertible_property_t<Property, SupportableProperties...> p1(p);
-    return impl_ ? impl_->query(typeid(p1), &p1) : throw bad_executor();
+    using result_type = typename decltype(p1)::polymorphic_query_result_type;
+    if (!impl_) throw bad_executor();
+    std::unique_ptr<result_type> result(static_cast<result_type*>(impl_->query(typeid(p1), &p1)));
+    return result ? *result : result_type();
   }
 
   template<class Function,
