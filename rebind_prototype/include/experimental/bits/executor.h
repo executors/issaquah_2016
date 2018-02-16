@@ -62,6 +62,20 @@ struct find_convertible_property<Property> {};
 template<class Property, class... SupportableProperties>
 using find_convertible_property_t = typename find_convertible_property<Property, SupportableProperties...>::type;
 
+template<class PropertyList, class... SupportableProperties>
+struct contains_exact_property_list;
+
+template<class Head, class... Tail, class... SupportableProperties>
+struct contains_exact_property_list<property_list<Head, Tail...>, SupportableProperties...>
+  : std::integral_constant<bool, contains_exact_property_v<Head, SupportableProperties...>
+      && contains_exact_property_list<property_list<Tail...>, SupportableProperties...>::value> {};
+
+template<class... SupportableProperties>
+struct contains_exact_property_list<property_list<>, SupportableProperties...> : std::true_type {};
+
+template<class PropertyList, class... SupportableProperties>
+static constexpr bool contains_exact_property_list_v = contains_exact_property_list<PropertyList, SupportableProperties...>::value;
+
 struct identity_property
 {
   static constexpr bool is_requirable = true;
@@ -362,17 +376,24 @@ class executor
 public:
   // construct / copy / destroy:
 
-  executor() noexcept {}
-  executor(std::nullptr_t) noexcept {}
+  executor() noexcept
+    : impl_(nullptr)
+  {
+  }
+
+  executor(std::nullptr_t) noexcept
+    : impl_(nullptr)
+  {
+  }
 
   executor(const executor& e) noexcept
+    : impl_(e.impl_ ? e.impl_->clone() : nullptr)
   {
-    impl_ = e.impl_ ? e.impl_->clone() : nullptr;
   }
 
   executor(executor&& e) noexcept
+    : impl_(e.impl_)
   {
-    impl_ = e.impl_;
     e.impl_ = nullptr;
   }
 
@@ -385,6 +406,21 @@ public:
         executor_impl::conditional_property_t<twoway_t, SupportableProperties...>{});
     impl_ = new executor_impl::impl<decltype(e2), SupportableProperties...>(std::move(e2));
   }
+
+  template<class... OtherSupportableProperties>
+  executor(executor<OtherSupportableProperties...> e,
+      typename std::enable_if<executor_impl::contains_exact_property_list_v<
+        executor_impl::property_list<SupportableProperties...>,
+          OtherSupportableProperties...>>::type* = 0)
+    : impl_(e.impl_ ? e.impl_->clone() : nullptr)
+  {
+  }
+
+  template<class... OtherSupportableProperties>
+  executor(executor<OtherSupportableProperties...> e,
+      typename std::enable_if<!executor_impl::contains_exact_property_list_v<
+        executor_impl::property_list<SupportableProperties...>,
+          OtherSupportableProperties...>>::type* = 0) = delete;
 
   executor& operator=(const executor& e) noexcept
   {
@@ -620,6 +656,7 @@ public:
   }
 
 private:
+  template<class...> friend class executor;
   executor(executor_impl::impl_base* i) noexcept : impl_(i) {}
   executor_impl::impl_base* impl_;
   const executor_impl::impl_base* get_impl() const { return impl_; }

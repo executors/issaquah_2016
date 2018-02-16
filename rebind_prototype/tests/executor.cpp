@@ -40,6 +40,10 @@ void executor_compile_test()
 
   executor ex5(pool.executor());
 
+  execution::executor<> ex6(ex5);
+  execution::executor<execution::oneway_t> ex7(ex5);
+  execution::executor<execution::oneway_t, execution::single_t> ex8(ex5);
+
   static_assert(noexcept(ex2 = cex1), "copy assignment must not throw");
   static_assert(noexcept(ex3 = std::move(ex1)), "move assignment must not throw");
   static_assert(noexcept(ex3 = nullptr), "nullptr assignment must not throw");
@@ -93,8 +97,8 @@ void executor_compile_test()
   const std::type_info& target_type = cex1.target_type();
   (void)target_type;
 
-  static_thread_pool::executor_type* ex6 = ex1.target<static_thread_pool::executor_type>();
-  (void)ex6;
+  static_thread_pool::executor_type* ex9 = ex1.target<static_thread_pool::executor_type>();
+  (void)ex9;
 
   const static_thread_pool::executor_type* cex6 = ex1.target<static_thread_pool::executor_type>();
   (void)cex6;
