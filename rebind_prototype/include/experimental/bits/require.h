@@ -6,6 +6,7 @@
 #include <experimental/bits/is_oneway_executor.h>
 #include <experimental/bits/is_bulk_oneway_executor.h>
 #include <experimental/bits/is_bulk_twoway_executor.h>
+#include <experimental/bits/is_constexpr_present.h>
 #include <utility>
 
 namespace std {
@@ -17,14 +18,21 @@ namespace require_impl {
 struct require_fn
 {
   template<class Executor, class Property>
+  constexpr auto operator()(Executor&& ex, Property&&) const
+    -> typename std::enable_if<std::decay<Property>::type::is_requirable
+      && is_constexpr_present_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
+        typename std::decay<Executor>::type>::type
+  {
+    return std::forward<Executor>(ex);
+  }
+
+  template<class Executor, class Property>
   constexpr auto operator()(Executor&& ex, Property&& p) const
     noexcept(noexcept(std::forward<Executor>(ex).require(std::forward<Property>(p))))
-    -> typename std::enable_if<std::decay<Property>::type::is_requirable,
-      decltype(std::forward<Executor>(ex).require(std::forward<Property>(p)))>::type
+    -> typename std::enable_if<std::decay<Property>::type::is_requirable
+      && !is_constexpr_present_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
+        decltype(std::forward<Executor>(ex).require(std::forward<Property>(p)))>::type
   {
-    static_assert(std::decay<Property>::type::template is_supportable<
-      decltype(std::forward<Executor>(ex).require(std::forward<Property>(p)))>,
-        "requested property is not supportable by resulting executor type");
     return std::forward<Executor>(ex).require(std::forward<Property>(p));
   }
 
@@ -32,12 +40,10 @@ struct require_fn
   constexpr auto operator()(Executor&& ex, Property&& p) const
     noexcept(noexcept(require(std::forward<Executor>(ex), std::forward<Property>(p))))
     -> typename std::enable_if<std::decay<Property>::type::is_requirable
-      && !has_require_member_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
-        decltype(require(std::forward<Executor>(ex), std::forward<Property>(p)))>::type
+      && !is_constexpr_present_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value
+        && !has_require_member_impl::eval<typename std::decay<Executor>::type, typename std::decay<Property>::type>::value,
+          decltype(require(std::forward<Executor>(ex), std::forward<Property>(p)))>::type
   {
-    static_assert(std::decay<Property>::type::template is_supportable<
-      decltype(require(std::forward<Executor>(ex), std::forward<Property>(p)))>,
-        "requested property is not supportable by resulting executor type");
     return require(std::forward<Executor>(ex), std::forward<Property>(p));
   }
 

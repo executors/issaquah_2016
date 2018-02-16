@@ -5,33 +5,28 @@ namespace std {
 namespace experimental {
 inline namespace executors_v1 {
 namespace execution {
+namespace continuation_impl {
 
-struct continuation_t
+template<class Derived>
+struct property_base
 {
   static constexpr bool is_requirable = true;
   static constexpr bool is_preferable = true;
 
   using polymorphic_query_result_type = bool;
 
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, continuation_t>::value;
+  template<class Executor, class = decltype(Executor::query(*static_cast<Derived*>(0)))>
+    static constexpr bool static_query_v = Executor::query(Derived());
+
+  static constexpr bool value() { return true; }
 };
+
+} // namespace continuation_impl
+
+struct continuation_t : continuation_impl::property_base<continuation_t> {};
+struct not_continuation_t : continuation_impl::property_base<not_continuation_t> {};
 
 constexpr continuation_t continuation;
-
-struct not_continuation_t
-{
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  using polymorphic_query_result_type = bool;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, not_continuation_t>::value;
-};
-
 constexpr not_continuation_t not_continuation;
 
 } // namespace execution

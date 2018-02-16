@@ -4,10 +4,14 @@
 namespace execution = std::experimental::execution;
 using std::experimental::static_thread_pool;
 
+using executor = execution::executor<
+  execution::oneway_t,
+  execution::single_t>;
+
 int main()
 {
   static_thread_pool pool{1};
-  execution::executor ex = pool.executor().require(execution::possibly_blocking);
+  executor ex = execution::require(pool.executor(), execution::possibly_blocking);
   ex.execute([]{ std::cout << "we made it\n"; });
   pool.wait();
 }

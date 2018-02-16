@@ -5,10 +5,14 @@ namespace execution = std::experimental::execution;
 using std::experimental::static_thread_pool;
 using std::experimental::executors_v1::future;
 
+using executor = execution::executor<
+  execution::twoway_t,
+  execution::single_t>;
+
 int main()
 {
   static_thread_pool pool{1};
-  execution::executor ex = pool.executor().require(execution::possibly_blocking);
+  executor ex = execution::require(pool.executor(), execution::possibly_blocking);
   future<int> f = ex.twoway_execute([]{ return 42; });
   std::cout << "result is " << f.get() << "\n";
 }

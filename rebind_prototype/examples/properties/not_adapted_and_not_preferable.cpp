@@ -13,10 +13,6 @@ namespace custom_props
     static constexpr bool is_preferable = false;
     using polymorphic_query_result_type = bool;
 
-    template <class Executor>
-      static constexpr bool is_supportable
-        = execution::can_query_v<Executor, tracing>;
-
     bool on = false;
   };
 };
@@ -50,8 +46,6 @@ private:
 };
 
 static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor requirements not met");
-static_assert(custom_props::tracing::is_supportable<inline_executor>, "tracing property not supportable");
-static_assert(!custom_props::tracing::is_supportable<static_thread_pool::executor_type>, "tracing property supportable when it shouldn't be");
 
 int main()
 {

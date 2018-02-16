@@ -13,10 +13,6 @@ namespace custom_props
     static constexpr bool is_preferable = false;
     using polymorphic_query_result_type = bool;
 
-    template <class Executor>
-      static constexpr bool is_supportable
-        = execution::can_query_v<Executor, tracing>;
-
     bool on = false;
   };
 
@@ -122,10 +118,7 @@ private:
 };
 
 static_assert(execution::is_oneway_executor_v<inline_executor>, "one way executor requirements not met");
-static_assert(custom_props::tracing::is_supportable<inline_executor>, "tracing property not supportable");
 static_assert(execution::is_oneway_executor_v<custom_props::tracing_executor<static_thread_pool::executor_type>>, "one way executor requirements not met");
-static_assert(!custom_props::tracing::is_supportable<static_thread_pool::executor_type>, "tracing property supportable when it shouldn't be");
-static_assert(custom_props::tracing::is_supportable<custom_props::tracing_executor<static_thread_pool::executor_type>>, "tracing property not supportable");
 
 int main()
 {
@@ -143,12 +136,12 @@ int main()
 
   static_assert(!execution::can_prefer_v<static_thread_pool::executor_type, custom_props::tracing>, "cannot prefer");
 
-  execution::executor ex5 = pool.executor();
+  execution::executor<execution::oneway_t, execution::single_t, custom_props::tracing> ex5 = pool.executor();
   auto ex6 = execution::require(ex5, custom_props::tracing{true});
   assert(execution::query(ex6, custom_props::tracing{}));
   ex6.execute([]{ std::cout << "and again\n"; });
 
-  static_assert(!execution::can_prefer_v<execution::executor, custom_props::tracing>, "cannot prefer");
+  static_assert(!execution::can_prefer_v<decltype(ex5), custom_props::tracing>, "cannot prefer");
 
   pool.wait();
 }

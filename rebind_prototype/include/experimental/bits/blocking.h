@@ -154,63 +154,57 @@ public:
   }
 };
 
+template<class Derived>
+struct property_base
+{
+  static constexpr bool is_requirable = true;
+  static constexpr bool is_preferable = true;
+
+  using polymorphic_query_result_type = bool;
+
+  template<class Executor, class = decltype(Executor::query(*static_cast<Derived*>(0)))>
+    static constexpr bool static_query_v = Executor::query(Derived());
+
+  static constexpr bool value() { return true; }
+};
+
+template<class Executor, class Property>
+constexpr auto possibly_blocking_static_query()
+  -> typename std::enable_if<!can_query_v<Executor, never_blocking_t>
+    && !can_query_v<Executor, always_blocking_t>, bool>::type
+      { return true; }
+
+template<class Executor, class Property>
+constexpr auto possibly_blocking_static_query()
+  -> typename std::enable_if<can_query_v<Executor, never_blocking_t>
+    || can_query_v<Executor, always_blocking_t>,
+      decltype(Executor::query(Property()))>::type
+{
+  return Executor::query(Property());
+}
+
+template<class Derived>
+struct possibly_blocking_base
+{
+  static constexpr bool is_requirable = true;
+  static constexpr bool is_preferable = true;
+
+  using polymorphic_query_result_type = bool;
+
+  template<class Executor, class = decltype(possibly_blocking_static_query<Executor, Derived>())>
+    static constexpr bool static_query_v = possibly_blocking_static_query<Executor, Derived>();
+
+  static constexpr bool value() { return true; }
+};
+
 } // namespace blocking_impl
 
-struct never_blocking_t
+struct never_blocking_t : blocking_impl::property_base<never_blocking_t> {};
+
+struct possibly_blocking_t : blocking_impl::possibly_blocking_base<possibly_blocking_t> {};
+
+struct always_blocking_t : blocking_impl::property_base<always_blocking_t>
 {
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  using polymorphic_query_result_type = bool;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, never_blocking_t>::value;
-};
-
-constexpr never_blocking_t never_blocking;
-
-struct possibly_blocking_t
-{
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  using polymorphic_query_result_type = bool;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, possibly_blocking_t>::value;
-
-  // Default require is an identity operation for all executors that have no
-  // other blocking property specified, as possibly blocking is the default.
-
-  template<class Executor>
-    friend typename enable_if<!can_query<Executor, always_blocking_t>::value
-      && !can_query<Executor, never_blocking_t>::value, Executor>::type
-        require(Executor ex, const possibly_blocking_t&) { return std::move(ex); }
-
-  // Default query always returns true for all executors that have no other
-  // blocking property specified, as possibly blocking is the default.
-
-  template<class Executor>
-    friend constexpr typename enable_if<!can_query<Executor, always_blocking_t>::value
-      && !can_query<Executor, never_blocking_t>::value, bool>::type
-        query(const Executor&, const possibly_blocking_t&) { return true; }
-};
-
-constexpr possibly_blocking_t possibly_blocking;
-
-struct always_blocking_t
-{
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  using polymorphic_query_result_type = bool;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, always_blocking_t>::value;
-
   // Default require for always blocking adapts all executors. Only enabled if adaptable blocking is supported.
 
   template<class Executor>
@@ -220,19 +214,8 @@ struct always_blocking_t
           { return blocking_impl::always_blocking_adapter<Executor>(std::move(ex)); }
 };
 
-constexpr always_blocking_t always_blocking;
-
-struct adaptable_blocking_t
+struct adaptable_blocking_t : blocking_impl::property_base<adaptable_blocking_t>
 {
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  using polymorphic_query_result_type = bool;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, adaptable_blocking_t>::value;
-
   // Default adapter for adaptable blocking adds the adaptable blocking property.
 
   template<class Executor>
@@ -241,20 +224,12 @@ struct adaptable_blocking_t
         { return blocking_impl::adaptable_blocking_adapter<Executor>(std::move(ex)); }
 };
 
+struct not_adaptable_blocking_t : blocking_impl::property_base<not_adaptable_blocking_t> {};
+
+constexpr never_blocking_t never_blocking;
+constexpr possibly_blocking_t possibly_blocking;
+constexpr always_blocking_t always_blocking;
 constexpr adaptable_blocking_t adaptable_blocking;
-
-struct not_adaptable_blocking_t
-{
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  using polymorphic_query_result_type = bool;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, not_adaptable_blocking_t>::value;
-};
-
 constexpr not_adaptable_blocking_t not_adaptable_blocking;
 
 } // namespace execution

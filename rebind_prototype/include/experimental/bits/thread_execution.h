@@ -5,33 +5,28 @@ namespace std {
 namespace experimental {
 inline namespace executors_v1 {
 namespace execution {
+namespace thread_execution_impl {
 
-struct thread_execution_mapping_t
+template<class Derived>
+struct property_base
 {
   static constexpr bool is_requirable = true;
   static constexpr bool is_preferable = true;
 
   using polymorphic_query_result_type = bool;
 
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, thread_execution_mapping_t>::value;
+  template<class Executor, class = decltype(Executor::query(*static_cast<Derived*>(0)))>
+    static constexpr bool static_query_v = Executor::query(Derived());
+
+  static constexpr bool value() { return true; }
 };
+
+} // namespace thread_execution_impl
+
+struct thread_execution_mapping_t : thread_execution_impl::property_base<thread_execution_mapping_t> {};
+struct new_thread_execution_mapping_t : thread_execution_impl::property_base<new_thread_execution_mapping_t> {};
 
 constexpr thread_execution_mapping_t thread_execution_mapping;
-
-struct new_thread_execution_mapping_t
-{
-  static constexpr bool is_requirable = true;
-  static constexpr bool is_preferable = true;
-
-  using polymorphic_query_result_type = bool;
-
-  template<class Executor>
-    static constexpr bool is_supportable
-      = can_query<Executor, new_thread_execution_mapping_t>::value;
-};
-
 constexpr new_thread_execution_mapping_t new_thread_execution_mapping;
 
 } // namespace execution

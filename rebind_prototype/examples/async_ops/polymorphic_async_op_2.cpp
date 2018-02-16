@@ -6,10 +6,21 @@
 namespace execution = std::experimental::execution;
 using std::experimental::static_thread_pool;
 
+using task_executor = execution::executor<
+        execution::oneway_t,
+        execution::single_t,
+        execution::never_blocking_t>;
+
+using completion_executor = execution::executor<
+        execution::oneway_t,
+        execution::single_t,
+        execution::never_blocking_t,
+        execution::prefer_only<execution::possibly_blocking_t>,
+        execution::prefer_only<execution::outstanding_work_t>>;
+
 // An operation that doubles a value asynchronously.
-template <class CompletionHandler>
-void my_twoway_operation_1(const execution::executor& tex, int n,
-    const execution::executor& cex, CompletionHandler h)
+void my_twoway_operation_1(const task_executor& tex, int n,
+    const completion_executor& cex, std::function<void(int)> h)
 {
   if (n == 0)
   {
@@ -38,13 +49,12 @@ void my_twoway_operation_1(const execution::executor& tex, int n,
   }
 }
 
-template <class CompletionHandler>
 struct my_twoway_operation_2_impl
 {
-  execution::executor tex;
+  task_executor tex;
   int i, m;
-  execution::executor cex;
-  CompletionHandler h;
+  completion_executor cex;
+  std::function<void(int)> h;
 
   void operator()(int n)
   {
@@ -61,14 +71,13 @@ struct my_twoway_operation_2_impl
   }
 };
 
-template <class CompletionHandler>
-void my_twoway_operation_2(const execution::executor& tex, int n, int m,
-    const execution::executor& cex, CompletionHandler h)
+void my_twoway_operation_2(const task_executor& tex, int n, int m,
+    const completion_executor& cex, std::function<void(int)> h)
 {
   // Intermediate steps of the composed operation are always continuations,
   // so we save the stored executors with that attribute rebound in.
   my_twoway_operation_1(tex, n, cex,
-    my_twoway_operation_2_impl<CompletionHandler>{
+    my_twoway_operation_2_impl{
         execution::prefer(tex, execution::continuation), 0, m,
         execution::prefer(cex, execution::continuation), std::move(h)});
 }
