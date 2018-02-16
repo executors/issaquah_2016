@@ -15,7 +15,9 @@ namespace custom_props {
     static constexpr bool is_preferable = true;
     using polymorphic_query_result_type = int;
 
-    int value = 1;
+    int value() const { return value_; }
+
+    int value_ = 1;
   };
 
   constexpr priority low_priority{0};
@@ -32,7 +34,7 @@ public:
   {
   public:
     executor_type(priority_scheduler& ctx) noexcept
-      : context_(ctx), priority_(custom_props::normal_priority.value)
+      : context_(ctx), priority_(custom_props::normal_priority.value())
     {
     }
 
@@ -49,7 +51,7 @@ public:
     executor_type require(custom_props::priority pri) const
     {
       executor_type new_ex(*this);
-      new_ex.priority_ = pri.value;
+      new_ex.priority_ = pri.value();
       return new_ex;
     }
 
