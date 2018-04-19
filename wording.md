@@ -38,10 +38,12 @@ namespace execution {
   struct oneway_t;
   struct twoway_t;
   struct then_t;
+  struct promise_t;
 
   constexpr oneway_t oneway;
   constexpr twoway_t twoway;
   constexpr then_t then;
+  constexpr promise_t promise;
 
   // Cardinality properties:
 
@@ -99,6 +101,7 @@ namespace execution {
   template<class Executor> struct is_oneway_executor;
   template<class Executor> struct is_twoway_executor;
   template<class Executor> struct is_then_executor;
+  template<class Executor> struct is_promise_executor;
   template<class Executor> struct is_bulk_oneway_executor;
   template<class Executor> struct is_bulk_twoway_executor;
   template<class Executor> struct is_bulk_then_executor;
@@ -106,15 +109,18 @@ namespace execution {
   template<class Executor> constexpr bool is_oneway_executor_v = is_oneway_executor<Executor>::value;
   template<class Executor> constexpr bool is_twoway_executor_v = is_twoway_executor<Executor>::value;
   template<class Executor> constexpr bool is_then_executor_v = is_then_executor<Executor>::value;
+  template<class Executor> constexpr bool is_promise_executor_v = is_promise_executor<Executor>::value;
   template<class Executor> constexpr bool is_bulk_oneway_executor_v = is_bulk_oneway_executor<Executor>::value;
   template<class Executor> constexpr bool is_bulk_twoway_executor_v = is_bulk_twoway_executor<Executor>::value;
   template<class Executor> constexpr bool is_bulk_then_executor_v = is_bulk_then_executor<Executor>::value;
 
   template<class Executor, class T> struct executor_future;
+  template<class Executor, class T> struct executor_ready_future;
   template<class Executor> struct executor_shape;
   template<class Executor> struct executor_index;
 
   template<class Executor, class T> using executor_future_t = typename executor_future<Executor, T>::type;
+  template<class Executor, class T> using executor_ready_future_t = typename executor_ready_future<Executor, T>::type;
   template<class Executor> using executor_shape_t = typename executor_shape<Executor>::type;
   template<class Executor> using executor_index_t = typename executor_index<Executor>::type;
 
@@ -157,6 +163,28 @@ The library defines several named customization point objects. In every translat
 A type `F` meets the `Future` requirements for some value type `T` if `F` is `std::experimental::future<T>` (defined in the C++ Concurrency TS, ISO/IEC TS 19571:2016). [*Note:* This concept is included as a placeholder to be elaborated, with the expectation that the elaborated requirements for `Future` will expand the applicability of some executor customization points. *--end note*]
 
 Forward progress guarantees are a property of the concrete `Future` type. [*Note:* `std::experimental::future<T>::wait()` blocks with forward progress guarantee delegation until the shared state is ready. *--end note*]
+
+### `Promise` requirements
+
+A type `P` meets the `Promise` requirements for some value type `T` if an instance `p` of `P` satisfies the requirements in the table below.
+
+| Expression | Return Type | Operational semantics |
+|------------|-------------|---------------------- |
+| `p.set_value(T)` | void | Completes the promise with a value. |
+| `p.set_exception(std::exception_ptr)` | void | Completes the promise with an exception wrapped in a std::exception_ptr. |
+
+### `ReadyFuture` requirements
+
+A type `RFR` meets the `ReadyFuture` requirements for some value type `T` if an instance `rfr` of `RFR` satisfies the requirements in the table below.
+
+In the table below `RFR2` is a type that meet the `ReadyFuture` requirements, and may be distinct from `RFR`. `e` is a value that meets the `OneWayExecutor` or `PromiseExecutor` requirements.
+
+| Expression | Return Type | Operational semantics |
+|------------|-------------|---------------------- |
+| `rfr.has_value()` | `bool` | Returns true if `rfr` carries a value. |
+| `rfr.has_exception()` | `bool` | Returns true if `rfr` carries an exception. |
+| `rfr.get()` | `T&` | Returns a reference to the value stored within `rfr` if `rfr.has_value()` returns `true`. Throws the exception returned by `rfr.exception()` otherwise.  |
+| `rfr.exception()` | `std::exception_ptr` | Returns the stored `exception_ptr` if present, otherwise returns a null `exception_ptr`. |
 
 ### `ProtoAllocator` requirements
 
@@ -204,11 +232,11 @@ The `ThenExecutor` requirements specify requirements for executors which create 
 
 A type `X` satisfies the `ThenExecutor` requirements if it satisfies the general requirements on executors, as well as the requirements in the table below.
 
-In the Table below, `x` denotes a (possibly const) executor object of type `X`, `fut` denotes a future object satisfying the Future requirements, `f` denotes a function object of type `F&&` callable as `DECAY_COPY(std::forward<F>(f))(fut)` and where `decay_t<F>` satisfies the `MoveConstructible` requirements, and `R` denotes the type of the expression `DECAY_COPY(std::forward<F>(f))(fut)`.
+In the Table below, `x` denotes a (possibly const) executor object of type `X`, `fut` denotes a future object satisfying the Future requirements, `rfr` denotes a value convertible to a `ReadyFuture` `RFR` for some type `T`, `f` denotes a function object of type `F&&` callable as `DECAY_COPY(std::forward<F>(f))(std::move(rfr))` and where `decay_t<F>` satisfies the `MoveConstructible` requirements, and `R` denotes the type of the expression `DECAY_COPY(std::forward<F>(f))(std::move(rfr))`.
 
 | Expression | Return Type | Operational semantics |
 |------------|-------------|---------------------- |
-| `x.then_execute(f, fut)` | A type that satisfies the `Future` requirements for the value type `R`. | When `fut` is ready, creates an execution agent which invokes `DECAY_COPY( std::forward<F>(f))(fut)` at most once, with the call to `DECAY_COPY` being evaluated in the thread that called `then_execute`. <br/> <br/> May block pending completion of `DECAY_COPY( std::forward<F>(f))(fut)`. <br/> <br/> The invocation of `then_execute` synchronizes with (C++Std [intro.multithread]) the invocation of `f`. <br/> <br/> Stores the result of `DECAY_COPY( std::forward<F>(f))(fut)`, or any exception thrown by `DECAY_COPY( std::forward<F>(f))(fut)`, in the associated shared state of the resulting `Future`. |
+| `x.then_execute(f, fut)` | A type that satisfies the `Future` requirements for the value type `R`. | When `fut` is ready, creates an execution agent which constructs `rfr`, a `ReadyFuture` with value type `T` from the value or exception stored in `fut`, invokes `DECAY_COPY( std::forward<F>(f))(rfr)` at most once, with the call to `DECAY_COPY` being evaluated in the thread that called `then_execute`. <br/> <br/> May block pending completion of `DECAY_COPY( std::forward<F>(f))(rfr)`. <br/> <br/> The invocation of `then_execute` synchronizes with (C++Std [intro.multithread]) the invocation of `f`. <br/> <br/> Stores the result of `DECAY_COPY( std::forward<F>(f))(rfr)`, or any exception thrown by `DECAY_COPY(std::forward<F>(f))(rfr)`, in the associated shared state of the resulting `Future`. |
 
 ### `BulkOneWayExecutor` requirements
 
@@ -253,6 +281,7 @@ In the Table below,
 |------------|-------------|---------------------- |
 | `x.bulk_twoway_execute(f, n, rf, sf)` | A type that satisfies the `Future` requirements for the value type `R`. | If `R` is non-void, invokes `rf()` at most once on an unspecified execution agent to produce the value `r`. Invokes `sf()` at most once on an unspecified execution agent to produce the value `s`. Creates a group of execution agents of shape `n` which invokes `DECAY_COPY( std::forward<F>(f))(i, r, s)` if `R` is non-void, and otherwise invokes `DECAY_COPY( std::forward<F>(f))(i, s)`, at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `bulk_twoway_execute`. <br/> <br/> May block pending completion of one or more invocations of `f`. <br/> <br/> The invocation of `bulk_twoway_execute` synchronizes with (C++Std [intro.multithread]) the invocations of `f`. <br/> <br/> Once all invocations of `f` finish execution, stores `r`, or any exception thrown by an invocation of `f`, in the associated shared state of the resulting `Future`. |
 
+
 ### `BulkThenExecutor` requirements
 
 The `BulkThenExecutor` requirements specify requirements for executors which create execution agents whose initiation is predicated on the readiness of a specified future, and which provide a channel for awaiting the completion of the submitted function object and obtaining its result.
@@ -268,15 +297,35 @@ In the Table below,
   * `sf` denotes a `CopyConstructible` function object with zero arguments whose result type is `S`,
   * `i` denotes a (possibly const) object whose type is `executor_index_t<X>`,
   * `s` denotes an object whose type is `S`,
+  * `rfr` denotes an object whose value is convertible to a `ReadyFuture` of some type `T`.
   * if `R` is non-void,
     * `r` denotes an object whose type is `R`,
-    * `f` denotes a function object of type `F&&` callable as `DECAY_COPY(std::forward<F>(f))(i, fut, r, s)` and where `decay_t<F>` satisfies the `MoveConstructible` requirements.
+    * `f` denotes a function object of type `F&&` callable as `DECAY_COPY(std::forward<F>(f))(i, v, r, s)` and where `decay_t<F>` satisfies the `MoveConstructible` requirements.
   * if `R` is void,
-    * `f` denotes a function object of type `F&&` callable as `DECAY_COPY(std::forward<F>(f))(i, fut, s)` and where `decay_t<F>` satisfies the `MoveConstructible` requirements.
+    * `f` denotes a function object of type `F&&` callable as `DECAY_COPY(std::forward<F>(f))(i, v, s)` and where `decay_t<F>` satisfies the `MoveConstructible` requirements.
 
 | Expression | Return Type | Operational semantics |
 |------------|-------------|---------------------- |
-| `x.bulk_then_execute(f, n, fut, rf, sf)` | A type that satisfies the `Future` requirements for the value type `R`. | If `R` is non-void, invokes `rf()` at most once on an unspecified execution agent to produce the value `r`. Invokes `sf()` at most once on an unspecified execution agent to produce the value `s`. When `fut` is ready, creates a group of execution agents of shape `n` which invokes `DECAY_COPY( std::forward<F>(f))(i, fut, r, s)` if `R` is non-void, and otherwise invokes `DECAY_COPY( std::forward<F>(f))(i, fut, s)`, at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `bulk_then_execute`. <br/> <br/> May block pending completion of one or more invocations of `f`. <br/> <br/> The invocation of `bulk_then_execute` synchronizes with (C++Std [intro.multithread]) the invocations of `f`. <br/> <br/> Once all invocations of `f` finish execution, stores `r`, or any exception thrown by an invocation of `f`, in the associated shared state of the resulting `Future`. |
+| `x.bulk_then_execute(f, n, fut, rf, sf)` | A type that satisfies the `Future` requirements for the value type `R`. | If `R` is non-void, invokes `rf()` at most once on an unspecified execution agent to produce the value `r`. Invokes `sf()` at most once on an unspecified execution agent to produce the value `s`. When `fut` is ready, creates a group of execution agents of shape `n` and which constructs `rfr`, a `ReadyFuture` of type `T` from the value or exception stored in `fut`, which invokes `DECAY_COPY( std::forward<F>(f))(i, rfr, r, s)` if `R` is non-void, and otherwise invokes `DECAY_COPY( std::forward<F>(f))(i, v, s)`, at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `bulk_then_execute`. <br/> <br/> May block pending completion of one or more invocations of `f`. <br/> <br/> The invocation of `bulk_then_execute` synchronizes with (C++Std [intro.multithread]) the invocations of `f`. <br/> <br/> Once all invocations of `f` finish execution, stores `r`, or any exception thrown by an invocation of `f`, in the associated shared state of the resulting `Future`. |
+| `X::ready_future_t<T>` | A type satisfying the requirements of `ReadyFuture`. | The `ReadyFuture` type returned matches the type of the `rfr` parameter to the callback provided to `bulk_then_execute`. |
+
+### `PromiseExecutor` requirements
+
+The `PromiseExecutor` requirements specify requirements for executors which allow retrieval of a `Promise` that allows a caller to delay the point at which work launched on a `ThenExecutor` or `BulkThenExecutor` is started.
+
+A type `X` satisfies the `PromiseExecutor` requirements if it satisfies either the `ThenExecutor` requirements or the `BulkThenExecutor` requirements, as well as the requirements in the table below.
+
+In the Table below,
+
+  * `x` denotes a (possibly const) executor object of type `X`,
+  * `n` denotes a shape object whose type is `executor_shape_t<X>`,
+  * `fut` denotes a future object satisfying the Future requirements,
+  * `rf` denotes a `CopyConstructible` function object with zero arguments whose result type is `R`,
+  * `sf` denotes a `CopyConstructible` function object with zero arguments whose result type is `S`,
+
+| Expression | Return Type | Operational semantics |
+|------------|-------------|---------------------- |
+| `x.get_promise<T>` | A pair of a value of a type that satisfies the `Promise` requirements and a value of a type that satisfies the `Future` requirements. | Returns a `Promise` `p` and a `Future` f such that calling `p.set_value(v)` completes `f` with a value and calling `p.set_exception(e)` completes `f` with an exception. |
 
 ## Executor customization points
 
@@ -425,6 +474,7 @@ The value returned from `execution::query(e, context_t)`, where `e` is an execut
     struct oneway_t;
     struct twoway_t;
     struct then_t;
+    struct promise_t;
 
 The directionality properties conform to the following specification:
 
@@ -447,10 +497,11 @@ The directionality properties conform to the following specification:
 | `oneway_t` | The executor type satisfies the `OneWayExecutor` or `BulkOneWayExecutor` requirements. |
 | `twoway_t` | The executor type satisfies the `TwoWayExecutor` or `BulkTwoWayExecutor` requirements. |
 | `then_t` | The executor type satisfies the `ThenExecutor` or `BulkThenExecutor` requirements. |
+| `promise_t` | The executor type satisfies the `PromiseExecutor` requirements. |
 
 `S::static_query_v<Executor>` is true if and only if `Executor` fulfills `S`'s requirements.
 
-The `oneway_t`, `twoway_t` and `then_t` properties are not mutually exclusive.
+The `oneway_t`, `twoway_t`, `then_t` and `promise_t` properties are not mutually exclusive.
 
 ##### `twoway_t` customization points
 
@@ -464,7 +515,7 @@ In addition to conforming to the above specification, the `twoway_t` property pr
 
 This customization point returns an executor that satisfies the `twoway_t` requirements by adapting the native functionality of an executor that does not satisfy the `twoway_t` requirements.
 
-*Returns:* A value `e1` of type `E1` that holds a copy of `ex`. `E1` has member functions `require` and `query` that forward to the corresponding members of the copy of `ex`, if present. For some type `T`, the type yielded by `executor_future_t<E1, T>` is `executor_future_t<Executor, T>` if `then_t::static_query_v<Executor>` is true; otherwise, it is `std::experimental::future<T>`. `e1` has the same properties as `ex`, except for the addition of the `twoway_t` property. Additional `twoway_t` requirements are satisfied as follows:
+*Returns:* A value `e1` of type `E1` that holds a copy of `ex`. `E1` has member functions `require` and `query` that forward to the corresponding members of the copy of `ex`, if present. For some type `T`, the type yielded by `executor_future_t<E1, T>` is `executor_future_t<Executor, T>` if `then_t::static_query_v<Executor>` is true; otherwise, it is `std::experimental::future<T>`. For some type `T`, the type yielded by `executor_ready_future_t<E1, T>` is `executor_ready_future_t<Executor, T>` if `then_t::static_query_v<Executor>` is true; otherwise, it is `std::experimental::future<T>`. `e1` has the same properties as `ex`, except for the addition of the `twoway_t` property. Additional `twoway_t` requirements are satisfied as follows:
 
   * If `single_t::static_query_v<Executor> && then_t::static_query_v<Executor>` is true, then `E1` has member function `twoway_execute` implemented in terms of `then_execute`. Otherwise, if `single_t::static_query_v<Executor> && oneway_t::static_query_v<Executor> && adaptable_blocking_t::static_query_v<Executor>` is true, then `E1` has member function `twoway_execute` implemented in terms of `execute`.
   * If `bulk_t::static_query_v<Executor> && then_t::static_query_v<Executor>` is true, then `E1` has member function `bulk_twoway_execute` implemented in terms of `bulk_then_execute`. Otherwise, if `bulk_t::static_query_v<Executor> && oneway_t::static_query_v<Executor> && adaptable_blocking_t::static_query_v<Executor>` is true, then `E1` has member function `bulk_twoway_execute` implemented in terms of `bulk_execute`.
@@ -513,7 +564,7 @@ In addition to conforming to the above specification, the `single_t` property pr
 
 This customization point returns an executor that satisfies the `single_t` requirements by adapting the native functionality of an executor that does not satisfy the `single_t` requirements.
 
-*Returns:* A value `e1` of type `E1` that holds a copy of `ex`. `E1` has member functions `require` and `query` that forward to the corresponding members of the copy of `ex`, if present. For some type `T`, the type yielded by `executor_future_t<E1, T>` is `executor_future_t<Executor, T>` if `twoway_t::static_query_v<Executor> || then_t::static_query_v<Executor>` is true; otherwise, it is `std::experimental::future<T>`. `e1` has the same properties as `ex`, except for the addition of the `single_t` property. Additional `single_t` requirements are satisfied as follows:
+*Returns:* A value `e1` of type `E1` that holds a copy of `ex`. `E1` has member functions `require` and `query` that forward to the corresponding members of the copy of `ex`, if present. For some type `T`, the type yielded by `executor_future_t<E1, T>` is `executor_future_t<Executor, T>` if `twoway_t::static_query_v<Executor> || then_t::static_query_v<Executor>` is true; otherwise, it is `std::experimental::future<T>`. For some type `T`, the type yielded by `executor_ready_future_t<E1, T>` is `executor_ready_future_t<Executor, T>` if `then_t::static_query_v<Executor>` is true; otherwise, it is `std::experimental::future<T>`. `e1` has the same properties as `ex`, except for the addition of the `single_t` property. Additional `single_t` requirements are satisfied as follows:
 
   * If `oneway_t::static_query_v<Executor> && bulk_t::static_query_v<Executor>` is true, then `E1` has member function `execute` implemented in terms of `bulk_execute`.
   * If `twoway_t::static_query_v<Executor> && bulk_t::static_query_v<Executor>` is true, then `E1` has member function `twoway_execute` implemented in terms of `bulk_twoway_execute`.
@@ -538,7 +589,7 @@ template<class Executor>
   friend see-below require(Executor ex, bulk_t);
 ```
 
-*Returns:* A value `e1` of type `E1` that holds a copy of `ex`. If `Executor` satisfies the `OneWayExecutor` requirements, `E1` shall satisfy the `OneWayExecutor` requirements by providing member functions `require`, `query`, and `execute` that forward to the corresponding member functions of the copy of `ex`, if present, and `E1` shall satisfy the `BulkExecutor` requirements by implementing `bulk_execute` in terms of `execute`. If `Executor` also satisfies the `TwoWayExecutor` requirements, `E1` shall satisfy the `TwoWayExecutor` requirements by providing the member function `twoway_execute` that forwards to the corresponding member function of the copy of `ex`, if present, and `E1` shall satisfy the `BulkTwoWayExecutor` requirements by implementing `bulk_twoway_execute` in terms of `bulk_execute`. `e1` has the same executor properties as `ex`, except for the addition of the `bulk_t` property.
+*Returns:* A value `e1` of type `E1` that holds a copy of `ex`. If `Executor` satisfies the `OneWayExecutor` requirements, `E1` shall satisfy the `OneWayExecutor` requirements by providing member functions `require`, `query`, and `execute` that forward to the corresponding member functions of the copy of `ex`, if present, and `E1` shall satisfy the `BulkExecutor` requirements by implementing `bulk_execute` in terms of `execute`. If `Executor` also satisfies the `TwoWayExecutor` requirements, `E1` shall satisfy the `TwoWayExecutor` requirements by providing the member function `twoway_execute` that forwards to the corresponding member function of the copy of `ex`, if present, and `E1` shall satisfy the `BulkTwoWayExecutor` requirements by implementing `bulk_twoway_execute` in terms of `bulk_execute`. `e1` has the same executor properties as `ex`, except for the addition of the `bulk_t` property. For some type `T`, the type yielded by `executor_ready_future_t<E1, T>` is `executor_ready_future_t<Executor, T>` if `then_t::static_query_v<Executor>` is true; otherwise, it is `std::experimental::future<T>`.
 
 *Remarks:* This function shall not participate in overload resolution unless `is_bulk_oneway_executor_v<Executor> ||` `is_bulk_twoway_executor_v<Executor>` is false, and `is_oneway_executor_v<Executor>` is true.
 
@@ -626,7 +677,7 @@ Let *k* be the least value of *i* for which `can_query_v<Executor,S::N`*i*`>` is
 
 *Returns:* `execution::query(ex, S::N`*k*`())`.
 
-*Remarks:* This function shall not participate in overload resolution unless `is_same_v<Property,S> && can_query_v<Executor,S::N`*i*`>` is true for at least one `S::N`*i*`. 
+*Remarks:* This function shall not participate in overload resolution unless `is_same_v<Property,S> && can_query_v<Executor,S::N`*i*`>` is true for at least one `S::N`*i*`.
 
 
 ```
@@ -868,7 +919,7 @@ This sub-clause contains templates that may be used to query the properties of a
         // exposition only
         template<class T>
         using helper = typename T::shape_type;
-    
+
       public:
         using type = std::experimental::detected_or_t<
           size_t, helper, decltype(execution::require(declval<const Executor&>(), execution::bulk))
@@ -1523,10 +1574,10 @@ class static_thread_pool
 {
   public:
     using executor_type = see-below;
-    
+
     // construction/destruction
     explicit static_thread_pool(std::size_t num_threads);
-    
+
     // nocopy
     static_thread_pool(const static_thread_pool&) = delete;
     static_thread_pool& operator=(const static_thread_pool&) = delete;
@@ -1543,7 +1594,7 @@ class static_thread_pool
     // wait for all threads in the thread pool to complete
     void wait();
 
-    // placeholder for a general approach to getting executors from 
+    // placeholder for a general approach to getting executors from
     // standard contexts.
     executor_type executor() noexcept;
 };
