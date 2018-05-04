@@ -112,7 +112,7 @@ namespace execution {
   template <typename ProtoAllocator>
   struct allocator_t;
 
-  constexpr allocator_t allocator;
+  constexpr allocator_t<void> allocator;
 
   // Executor type traits:
 
