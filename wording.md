@@ -866,7 +866,7 @@ allocator_t<OtherProtoAllocator> operator()(const OtherProtoAllocator &a) const;
 
 *Remarks:* This function shall not participate in overload resolution unless `ProtoAllocator` is `void`.
 
-[*Note:* It is permitted for an allocator provided via `allocator_t<void>::operator(OtherProtoAllocator)` property to be the same type as the default allocator provided by the implementation. *--end note*]
+[*Note:* It is permitted for `a` to be an executor's implementation-defined default allocator and, if so, the default allocator may also be established within an executor by passing the result of this function to `require`. *--end note*]
 
 ```
 static constexpr ProtoAllocator value() const;
