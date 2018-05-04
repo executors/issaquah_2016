@@ -838,13 +838,9 @@ The `allocator_t` property conforms to the following specification:
           = Executor::query(allocator_t);
 
         template <typename OtherProtoAllocator>
-        allocator_t<OtherProtoAllocator> operator()(const OtherProtoAllocator &a) const {
-        	return allocator_t<OtherProtoAllocator>{a};
-        }
+        allocator_t<OtherProtoAllocator> operator()(const OtherProtoAllocator &a) const;
 
-        constexpr ProtoAllocator value() const {
-          return a_; // exposition only
-        }
+        constexpr ProtoAllocator value() const;
 
     private:
         ProtoAllocator a_; // exposition only
@@ -855,15 +851,30 @@ The `allocator_t` property conforms to the following specification:
 | `allocator_t<ProtoAllocator>` | Result of `allocator_t<void>::operator(OtherProtoAllocator)`. The executor type satisfies the `OneWayExecutor`, `TwoWayExecutor`, or `ThenExecutor` requirements. The executor implementation shall use the encapsulated allocator to allocate any memory required to store the submitted function object. |
 | `allocator_t<void>` | Specialisation of `allocator_t<ProtoAllocator>`. The executor type satisfies the `OneWayExecutor`, `TwoWayExecutor`, or `ThenExecutor` requirements. The executor implementation shall use an implementation defined default allocator to allocate any memory required to store the submitted function object. |
 
-*Remarks:* `operator(OtherProtoAllocator)` and `value()` shall not participate in overload resolution unless `ProtoAllocator` is `void`.
-
-*Postconditions:* `alloc.value()` returns `a`, where `alloc` is the result of `allocator(a)`.
-
 [*Note:* Where the `allocator_t` is queryable, it must be accepted as both `allocator_t<ProtoAllocator>` and `allocator_t<void>`. *--end note*]
 
 [*Note:* As the `allocator_t<ProtoAllocator>` property enapsulates a value which can be set and queried, it is required to be implemented such that it is callable with the `OtherProtoAllocator` parameter where the customization points accepts the result of `allocator_t<void>::operator(OtherProtoAllocator)`; `allocator_t<OtherProtoAllocator>` and is passable as an instance  where the customization points accept an instance of `allocator_t<void>`. *--end note*]
 
+#### `allocator_t` members
+
+```
+template <typename OtherProtoAllocator>
+allocator_t<OtherProtoAllocator> operator()(const OtherProtoAllocator &a) const;
+```
+
+*Returns:* An allocator object whose member `a_` is initialized as `a_(a)`.
+
+*Remarks:* This function shall not participate in overload resolution unless `ProtoAllocator` is `void`.
+
 [*Note:* It is permitted for an allocator provided via `allocator_t<void>::operator(OtherProtoAllocator)` property to be the same type as the default allocator provided by the implementation. *--end note*]
+
+```
+static constexpr ProtoAllocator value() const;
+```
+
+*Returns:* `a_`.
+
+*Remarks:* This function shall not participate in overload resolution unless `ProtoAllocator` is not `void`.
 
 ## Executor type traits
 
