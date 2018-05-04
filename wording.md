@@ -842,7 +842,7 @@ The `allocator_t` property conforms to the following specification:
         	return allocator_t<OtherProtoAllocator>{a};
         }
 
-        static constexpr ProtoAllocator value() const {
+        constexpr ProtoAllocator value() const {
           return a_; // exposition only
         }
 
