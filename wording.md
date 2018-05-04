@@ -851,9 +851,11 @@ The `allocator_t` property conforms to the following specification:
 | `allocator_t<ProtoAllocator>` | For executor types that satisfy the `OneWayExecutor`, `TwoWayExecutor`, or `ThenExecutor` requirements, the executor implementation shall use the encapsulated allocator to allocate any memory required to store the submitted function object. |
 | `allocator_t<void>` | For executor types that satisfy the `OneWayExecutor`, `TwoWayExecutor`, or `ThenExecutor` requirements, the executor implementation shall use an implementation defined default allocator to allocate any memory required to store the submitted function object. |
 
-[*Note:* Where the `allocator_t` is queryable, it must be accepted as both `allocator_t<ProtoAllocator>` and `allocator_t<void>`. *--end note*]
+If the expression `execution::query(E, P)` is well formed, where `P` is an object of type `allocator_t<ProtoAllocator>`, then:
 
-[*Note:* As the `allocator_t<ProtoAllocator>` property enapsulates a value which can be set and queried, it is required to be implemented such that it is callable with the `OtherProtoAllocator` parameter where the customization points accepts the result of `allocator_t<void>::operator()(const OtherProtoAllocator&) const`; `allocator_t<OtherProtoAllocator>` and is passable as an instance  where the customization points accept an instance of `allocator_t<void>`. *--end note*]
+* the type of the expression `execution::query(E, P)` shall satisfy the `ProtoAllocator` requirements;
+* the result of the expression `execution::query(E, P)` shall be the allocator currently established in the executor `E`; and
+* the expression `execution::query(E, allocator_t<void>{})` shall also be well formed and have the same result as `execution::query(E, P)`.
 
 #### `allocator_t` members
 
