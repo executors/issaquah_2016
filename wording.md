@@ -1,23 +1,3 @@
-### Header `<exception>` synopsis
-
-```
-namespace std {
-namespace experimental {
-inline namespace executors_v1 {
-
-  // Exception argument tag
-  struct exception_arg_t { explicit exception_arg_t() = default; };
-  inline constexpr exception_arg_t exception_arg{};
-
-}
-}
-}
-```
-
-## Exception argument tag
-
-The `exception_arg_t` struct is an empty structure type used as a unique type to disambiguate constructor and function overloading. Specifically, functions passed to `then_execute` and `bulk_then_execute` may have `exception_arg_t` as an argument, immediately followed by an argument that should be interpreted as an exception thrown from a preceding function invocation.
-
 ### Header `<execution>` synopsis
 
 ```
@@ -231,7 +211,7 @@ In the Table below,
   * `val` denotes any object stored in `fut`'s associated shared state when it becomes nonexceptionally ready,
   * `e` denotes the object stored in `fut`'s associated shared state when it becomes exceptionally ready,
   * `NORMAL` denotes the expression `DECAY_COPY(std::forward<F>(f))(val)` if `fut`'s value type is non-`void` and `DECAY_COPY(std::forward<F>(f))()` if `fut`'s value type is `void`,
-  * `EXCEPTIONAL` denotes the expression `DECAY_COPY(std::forward<F>(f))(exception_arg, e)`,
+  * `EXCEPTIONAL` denotes the expression `DECAY_COPY(std::forward<F>(f)).error(e)`,
   * `f` denotes a function object of type `F&&` callable as `NORMAL` or `EXCEPTIONAL` and where `decay_t<F>` satisfies the `MoveConstructible` requirements,
   *  and `R` denotes the type of the expression `NORMAL`.
 
@@ -302,7 +282,7 @@ In the Table below,
   * if `R` is non-void,
     * `r` denotes an object whose type is `R`,
     * `NORMAL` denotes the expression `DECAY_COPY(std::forward<F>(f))(i, val, r, s)`,
-    * `EXCEPTIONAL` denotes the expression `DECAY_COPY(std::forward<F>(f))(i, exception_arg, e, r, s)`,
+    * `EXCEPTIONAL` denotes the expression `DECAY_COPY(std::forward<F>(f)).error(i, e, r, s)`,
   * if `R` is void,
     * `NORMAL` denotes the expression `DECAY_COPY(std::forward<F>(f))(i, val, s)`,
     * `EXCEPTIONAL` denotes the expression `DECAY_COPY(std::forward<F>(f))(i, exception_arg, e, s)`,
