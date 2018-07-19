@@ -71,6 +71,22 @@ namespace execution {
   constexpr single_t single;
   constexpr bulk_t bulk;
 
+  // Bulk task properties:
+
+  template<class ElementFunction, class Shape, class SharedFactory>
+    struct make_bulk_oneway_task;
+
+  template<class ElementFunction, class Shape, class SharedFactory>
+    make_bulk_oneway_task(ElementFunction&&, Shape&&, SharedFactory&&)
+      -> make_bulk_oneway_task<ElementFunction, Shape, SharedFactory>;
+
+  template<class ElementFunction, class Shape, class SharedFactory, class ResultFactory>
+    struct make_bulk_twoway_task;
+
+  template<class ElementFunction, class Shape, class SharedFactory, class ResultFactory>
+    make_bulk_twoway_task(ElementFunction&&, Shape&&, SharedFactory&&, ResultFactory&&)
+      -> make_bulk_twoway_task<ElementFunction, Shape, SharedFactory, ResultFactory>;
+
   // Blocking properties:
 
   struct blocking_t;
@@ -248,6 +264,7 @@ A type `X` satisfies the `BulkOneWayExecutor` requirements if it satisfies the g
 In the Table below,
 
   * `x` denotes a (possibly const) executor object of type `X`,
+  * `t` denotes an object of implementation-defined type returned by a call to `execution::query(x, make_bulk_oneway_task(f, n, sf))` which stores the objects `f`, `n`, and `sf` internally.
   * `n` denotes a shape object whose type is `executor_shape_t<X>`,
   * `sf` denotes a `CopyConstructible` function object with zero arguments whose result type is `S`,
   * `i` denotes a (possibly const) object whose type is `executor_index_t<X>`,
@@ -256,7 +273,7 @@ In the Table below,
 
 | Expression | Return Type | Operational semantics |
 |------------|-------------|---------------------- |
-| `x.bulk_execute(f, n, sf)` | `void` | Invokes `sf()` at most once on an unspecified execution agent to produce the value `s`. Creates a group of execution agents of shape `n` which invokes `DECAY_COPY(std::forward<F>(f))(i, s)` at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `bulk_execute`. <br/> <br/> May block pending completion of one or more calls to `DECAY_COPY(std::forward<F>(f))(i, s)`. <br/> <br/> The invocation of `bulk_execute` synchronizes with (C++Std [intro.multithread]) the invocations of `f`. <br/> <br/> `bulk_execute` shall not propagate any exception thrown by `DECAY_COPY(std::forward<F>(f))(i, s)` or any other function submitted to the executor. [*Note:* The treatment of exceptions thrown by bulk one-way submitted functions and the forward progress guarantee of execution agents created by one-way execution functions is specific to the concrete executor type. *--end note.*] |
+| `x.execute(t)` | `void` | Invokes `sf()` at most once on an unspecified execution agent to produce the value `s`. Creates a group of execution agents of shape `n` which invokes `DECAY_COPY(std::forward<F>(f))(i, s)` at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `execute`. <br/> <br/> May block pending completion of one or more calls to `DECAY_COPY(std::forward<F>(f))(i, s)`. <br/> <br/> The invocation of `execute` synchronizes with (C++Std [intro.multithread]) the invocations of `f`. <br/> <br/> `execute` shall not propagate any exception thrown by `DECAY_COPY(std::forward<F>(f))(i, s)` or any other function submitted to the executor. [*Note:* The treatment of exceptions thrown by bulk one-way submitted functions and the forward progress guarantee of execution agents created by one-way execution functions is specific to the concrete executor type. *--end note.*] |
 
 ### `BulkTwoWayExecutor` requirements
 
@@ -267,6 +284,7 @@ A type `X` satisfies the `BulkTwoWayExecutor` requirements if it satisfies the g
 In the Table below,
 
   * `x` denotes a (possibly const) executor object of type `X`,
+  * `t` denotes an object of implementation-defined type returned by a call to `execution::query(x, make_bulk_twoway_task(f, n, sf, rf))` which stores the objects `f`, `n`, `sf`, and `rf` internally.
   * `n` denotes a shape object whose type is `executor_shape_t<X>`,
   * `rf` denotes a `CopyConstructible` function object with zero arguments whose result type is `R`,
   * `sf` denotes a `CopyConstructible` function object with zero arguments whose result type is `S`,
@@ -280,7 +298,7 @@ In the Table below,
 
 | Expression | Return Type | Operational semantics |
 |------------|-------------|---------------------- |
-| `x.bulk_twoway_execute(f, n, rf, sf)` | A type that satisfies the `Future` requirements for the value type `R`. | If `R` is non-void, invokes `rf()` at most once on an unspecified execution agent to produce the value `r`. Invokes `sf()` at most once on an unspecified execution agent to produce the value `s`. Creates a group of execution agents of shape `n` which invokes `DECAY_COPY(std::forward<F>(f))(i, r, s)` if `R` is non-void, and otherwise invokes `DECAY_COPY(std::forward<F>(f))(i, s)`, at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `bulk_twoway_execute`. <br/> <br/> May block pending completion of one or more invocations of `f`. <br/> <br/> The invocation of `bulk_twoway_execute` synchronizes with (C++Std [intro.multithread]) the invocations of `f`. <br/> <br/> Once all invocations of `f` finish execution, stores `r`, or any exception thrown by an invocation of `f`, in the associated shared state of the resulting `Future`. |
+| `x.twoway_execute(t)` | A type that satisfies the `Future` requirements for the value type `R`. | If `R` is non-void, invokes `rf()` at most once on an unspecified execution agent to produce the value `r`. Invokes `sf()` at most once on an unspecified execution agent to produce the value `s`. Creates a group of execution agents of shape `n` which invokes `DECAY_COPY(std::forward<F>(f))(i, r, s)` if `R` is non-void, and otherwise invokes `DECAY_COPY(std::forward<F>(f))(i, s)`, at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `twoway_execute`. <br/> <br/> May block pending completion of one or more invocations of `f`. <br/> <br/> The invocation of `twoway_execute` synchronizes with (C++Std [intro.multithread]) the invocations of `f`. <br/> <br/> Once all invocations of `f` finish execution, stores `r`, or any exception thrown by an invocation of `f`, in the associated shared state of the resulting `Future`. |
 
 ### `BulkThenExecutor` requirements
 
@@ -291,6 +309,7 @@ A type `X` satisfies the `BulkThenExecutor` requirements if it satisfies the gen
 In the Table below,
 
   * `x` denotes a (possibly const) executor object of type `X`,
+  * `t` denotes an object of implementation-defined type returned by a call to `execution::query(x, make_bulk_twoway_task(f, n, sf, rf))` which stores the objects `f`, `n`, `sf`, and `rf` internally.
   * `n` denotes a shape object whose type is `executor_shape_t<X>`,
   * `fut` denotes a future object satisfying the Future requirements,
   * `val` denotes any object stored in `fut`'s associated shared state when it becomes nonexceptionally ready,
@@ -310,7 +329,7 @@ In the Table below,
 
 | Expression | Return Type | Operational semantics |
 |------------|-------------|---------------------- |
-| `x.bulk_then_execute(f, n, fut, rf, sf)` | A type that satisfies the `Future` requirements for the value type `R`. | If `R` is non-void, invokes `rf()` at most once on an unspecified execution agent to produce the value `r`. Invokes `sf()` at most once on an unspecified execution agent to produce the value `s`. <br/> <br/> When `fut` becomes nonexceptionally ready, and if `NORMAL` is a well-formed expression, creates a group of execution agents of shape `n` which invokes `NORMAL` at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `bulk_then_execute`. <br/> </br> Otherwise, when `fut` becomes exceptionally ready, and if `EXCEPTIONAL` is a well-formed expression, creates a group of execution agents of shape `n` which invokes `EXCEPTIONAL` at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `bulk_then_execute`. <br/> <br/> If neither `NORMAL` nor `EXCEPTIONAL` are well-formed expressions, the invocation of `bulk_then_execute` shall be ill-formed <br/> <br/> May block pending completion of one or more invocations of `f`. <br/> <br/> The invocation of `bulk_then_execute` synchronizes with (C++Std [intro.multithread]) the invocations of `f`. <br/> <br/> Once all invocations of `f` finish execution, stores `r`, or any exception thrown by an invocation of `f`, in the associated shared state of the resulting `Future`. Otherwise, when `fut` becomes exceptionally ready, and if `EXCEPTIONAL` is an ill-formed expression, stores `e` in the associated shared state of the resulting `Future`. |
+| `x.then_execute(t, fut)` | A type that satisfies the `Future` requirements for the value type `R`. | If `R` is non-void, invokes `rf()` at most once on an unspecified execution agent to produce the value `r`. Invokes `sf()` at most once on an unspecified execution agent to produce the value `s`. <br/> <br/> When `fut` becomes nonexceptionally ready, and if `NORMAL` is a well-formed expression, creates a group of execution agents of shape `n` which invokes `NORMAL` at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `then_execute`. <br/> </br> Otherwise, when `fut` becomes exceptionally ready, and if `EXCEPTIONAL` is a well-formed expression, creates a group of execution agents of shape `n` which invokes `EXCEPTIONAL` at most once for each value of `i` in the range `[0,n)`, with the call to `DECAY_COPY` being evaluated in the thread that called `then_execute`. <br/> <br/> If neither `NORMAL` nor `EXCEPTIONAL` are well-formed expressions, the invocation of `then_execute` shall be ill-formed <br/> <br/> May block pending completion of one or more invocations of `f`. <br/> <br/> The invocation of `then_execute` synchronizes with (C++Std [intro.multithread]) the invocations of `f`. <br/> <br/> Once all invocations of `f` finish execution, stores `r`, or any exception thrown by an invocation of `f`, in the associated shared state of the resulting `Future`. Otherwise, when `fut` becomes exceptionally ready, and if `EXCEPTIONAL` is an ill-formed expression, stores `e` in the associated shared state of the resulting `Future`. |
 
 ## Executor customization points
 
@@ -575,6 +594,74 @@ template<class Executor>
 *Returns:* A value `e1` of type `E1` that holds a copy of `ex`. If `Executor` satisfies the `OneWayExecutor` requirements, `E1` shall satisfy the `OneWayExecutor` requirements by providing member functions `require`, `query`, and `execute` that forward to the corresponding member functions of the copy of `ex`, if present, and `E1` shall satisfy the `BulkExecutor` requirements by implementing `bulk_execute` in terms of `execute`. If `Executor` also satisfies the `TwoWayExecutor` requirements, `E1` shall satisfy the `TwoWayExecutor` requirements by providing the member function `twoway_execute` that forwards to the corresponding member function of the copy of `ex`, if present, and `E1` shall satisfy the `BulkTwoWayExecutor` requirements by implementing `bulk_twoway_execute` in terms of `bulk_execute`. `e1` has the same executor properties as `ex`, except for the addition of the `bulk_t` property.
 
 *Remarks:* This function shall not participate in overload resolution unless `is_bulk_oneway_executor_v<Executor> ||` `is_bulk_twoway_executor_v<Executor>` is false, and `is_oneway_executor_v<Executor>` is true.
+
+### Bulk task properties
+
+  template<class ElementFunction, class Shape, class SharedFactory>
+    struct make_bulk_oneway_task;
+
+  template<class ElementFunction, class Shape, class SharedFactory, class ResultFactory>
+    struct make_bulk_twoway_task;
+
+The bulk task properties conform to the following specification:
+
+    struct S
+    {
+      static constexpr bool is_requirable = true;
+      static constexpr bool is_preferable = false;
+
+      using polymorphic_query_result_type = any;
+
+      template<class Executor>
+        friend implementation-defined query(const Executor& ex, const S&);
+    };
+
+```
+template<class Executor>
+  friend implementation-defined query(const Executor& ex, const S&);
+```
+
+*Returns:* A value `t` of implementation-defined type such that `ex.execute(t)` is well formed.
+
+In addition to conforming to the above specification, the properties provide the following customizations:
+
+  template<class ElementFunction, class Shape, class SharedFactory>
+    struct make_bulk_oneway_task
+    {
+      template<class UElementFunction, class UShape, class USharedFactory>
+        make_bulk_oneway_task(UElementFunction&&, UShape&&, USharedFactory&&);
+    };
+
+  template<class ElementFunction, class Shape, class SharedFactory, class ResultFactory>
+    struct make_bulk_twoway_task
+    {
+      template<class UElementFunction, class UShape, class USharedFactory, class UResultFactory>
+        make_bulk_twoway_task(UElementFunction&&, UShape&&, USharedFactory&&, UResultFactory&&);
+    };
+
+```
+template<class UElementFunction, class UShape, class USharedFactory>
+  make_bulk_oneway_task(UElementFunction&& ef, UShape&& s, USharedFactory&& sf);
+```
+
+*Effects:* Constructs a property describing a bulk one-way task.
+
+*Requires:*
+- `UElementFunction` is implicitly convertible to `ElementFunction`.
+- `UShape` is implicitly convertible to `Shape`.
+- `USharedFactory` is implicitly convertible to `SharedFactory`.
+
+```
+template<class UElementFunction, class UShape, class USharedFactory, class UResultFactory>
+  make_bulk_twoway_task(UElementFunction&&, UShape&&, USharedFactory&&, UResultFactory&&);
+```
+
+*Effects:* Constructs a property describing a bulk two-way task.
+
+*Requires:*
+- `UElementFunction` is implicitly convertible to `ElementFunction`.
+- `UShape` is implicitly convertible to `Shape`.
+- `USharedFactory` is implicitly convertible to `SharedFactory`.
 
 ### Behavioral properties
 
