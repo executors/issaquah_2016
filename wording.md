@@ -925,16 +925,12 @@ The `mapping_t` property describes what guarantees executors provide about the m
 
 | Nested Property Type| Nested Property Object Name | Requirements |
 |-------------------------|---------------------------------|--------------|
-| `mapping_t::thread_t` | `mapping::thread` | Execution agents are mapped onto threads of execution. |
-| `mapping_t::new_thread_t` | `mapping::new_thread` | Each execution agent is mapped onto a new thread of execution. |
+| `mapping_t::thread_t` | `mapping::thread` | An agent A has exclusive ownership of a `std::thread` for the duration of A's lifetime and any agents to which A delegates forward progress. |
 | `mapping_t::other_t` | `mapping::other` | Mapping of each execution agent is implementation-defined. |
 
 [*Note:* A mapping of an execution agent onto a thread of execution implies the execution
 agent runs as-if on a `std::thread`. Therefore, the facilities provided by
-`std::thread`, such as thread-local storage, are available.
-`mapping_t::new_thread_t` provides stronger guarantees, in
-particular that thread-local storage will not be shared between execution
-agents. *--end note*]
+`std::thread`, such as thread-local storage, are available. *--end note*]
 
 ### Properties for customizing memory allocation
 
