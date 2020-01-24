@@ -241,7 +241,7 @@ For some subexpressions `e` and `f`, let `E` be a type such that `decltype((e))`
           void set_value() {
             invoke(f_);
           }
-          void set_error(std::exception_ptr) {
+          void set_error(std::exception_ptr) noexcept {
             terminate();
           }
           void set_done() noexcept {}
@@ -444,7 +444,7 @@ template<template<class...> class Variant>
 struct has-error-types; // exposition only
 
 template<class S>
-comcept has-sender-types = // exposition only
+concept has-sender-types = // exposition only
   requires {
     typename has-value-types<S::template value_types>;
     typename has-error-types<S::template error_types>;
@@ -467,7 +467,7 @@ concept scheduler =
   copy_constructible<remove_cvref_t<S>> &&
   equality_comparable<remove_cvref_t<S>> &&
   requires(E&& e) {
-    execution::schedule((S&&)s);
+    execution::schedule((E&&)e);
   }; // && sender<invoke_result_t<execution::schedule, S>>
 ```
 
@@ -611,15 +611,18 @@ and whether or not it ever calls `set_done` on a receiver.
 
 ```c++
     template<class S>
+    concept has-sender-traits = ???; // what should be its definition ?
+
+    template<class S>
     struct sender-traits-base {}; // exposition-only
 
     template<class S>
       requires (!same_as<S, remove_cvref_t<S>>)
-    struct sender-traits-base : sender_traits<remove_cvref_t<S>> {};
+    struct sender-traits-base<S> : sender_traits<remove_cvref_t<S>> {};
 
     template<class S>
       requires same_as<S, remove_cvref_t<S>> &&
-      sender<S> && has-sender-traits<S>
+      sender<S> && has-sender-traits<S> // concept has-sender-traits is used here but was not defined
     struct sender-traits-base<S> {
       template<template<class...> class Tuple, template<class...> class Variant>
       using value_types = typename S::template value_types<Tuple, Variant>;
