@@ -611,7 +611,7 @@ and whether or not it ever calls `set_done` on a receiver.
 
 ```c++
     template<class S>
-    concept has-sender-traits = ???; // what should be its definition ?
+    concept has-sender-traits; // exposition-only
 
     template<class S>
     struct sender-traits-base {}; // exposition-only
